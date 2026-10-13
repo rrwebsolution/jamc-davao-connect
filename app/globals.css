@@ -1,26 +1,269 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-geist-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-navbar: var(--navbar);
+  --color-navbar-foreground: var(--navbar-foreground);
+  --color-button: var(--button);
+  --color-button-foreground: var(--button-foreground);
+  --color-link: var(--link);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/*
+ * Brand variables. The root layout overrides these inline on <html> with the
+ * colours saved in Appearance settings; the values here are the defaults.
+ */
+:root {
+  --brand-primary: #7c2d12;
+  --brand-primary-fg: #ffffff;
+  --brand-secondary: #f3e7da;
+  --brand-secondary-fg: #1c1917;
+  --brand-accent: #b45309;
+  --brand-accent-fg: #ffffff;
+  --brand-sidebar: #431407;
+  --brand-sidebar-fg: #fdf4e7;
+  --brand-navbar: #ffffff;
+  --brand-navbar-fg: #1c1917;
+  --brand-background: #fbf7f2;
+  --brand-background-fg: #1c1917;
+  --brand-card: #ffffff;
+  --brand-card-fg: #1c1917;
+  --brand-button: #7c2d12;
+  --brand-button-fg: #ffffff;
+  --brand-link: #9a3412;
+  --radius: 0.75rem;
+}
+
+/*
+ * Design tokens, derived from the brand variables. Components use only these.
+ * `.theme-scope` re-derives them for a subtree: the Appearance live preview
+ * sets its own --brand-* values on a .theme-scope wrapper.
+ */
+:root,
+.theme-scope {
+  --background: var(--brand-background);
+  --foreground: var(--brand-background-fg);
+  --card: var(--brand-card);
+  --card-foreground: var(--brand-card-fg);
+  --popover: var(--brand-card);
+  --popover-foreground: var(--brand-card-fg);
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--brand-primary-fg);
+  --secondary: var(--brand-secondary);
+  --secondary-foreground: var(--brand-secondary-fg);
+  --muted: color-mix(in oklch, var(--brand-background-fg) 6%, var(--brand-background));
+  --muted-foreground: color-mix(in oklch, var(--brand-background-fg) 62%, var(--brand-background));
+  --accent: color-mix(in oklch, var(--brand-primary) 9%, var(--brand-card));
+  --accent-foreground: var(--brand-card-fg);
+  --highlight: var(--brand-accent);
+  --highlight-foreground: var(--brand-accent-fg);
+  --destructive: oklch(0.55 0.21 27);
+  --success: oklch(0.5 0.13 150);
+  --warning: oklch(0.58 0.14 70);
+  --border: color-mix(in oklch, var(--brand-background-fg) 13%, var(--brand-background));
+  --input: color-mix(in oklch, var(--brand-background-fg) 18%, var(--brand-background));
+  --ring: color-mix(in oklch, var(--brand-primary) 55%, transparent);
+  --sidebar: var(--brand-sidebar);
+  --sidebar-foreground: var(--brand-sidebar-fg);
+  --sidebar-primary: var(--brand-sidebar-fg);
+  --sidebar-primary-foreground: var(--brand-sidebar);
+  --sidebar-accent: color-mix(in oklch, var(--brand-sidebar-fg) 13%, var(--brand-sidebar));
+  --sidebar-accent-foreground: var(--brand-sidebar-fg);
+  --sidebar-border: color-mix(in oklch, var(--brand-sidebar-fg) 16%, var(--brand-sidebar));
+  --sidebar-ring: color-mix(in oklch, var(--brand-sidebar-fg) 50%, transparent);
+  --navbar: var(--brand-navbar);
+  --navbar-foreground: var(--brand-navbar-fg);
+  --button: var(--brand-button);
+  --button-foreground: var(--brand-button-fg);
+  --link: var(--brand-link);
+  --chart-1: var(--brand-primary);
+  --chart-2: var(--brand-accent);
+  --chart-3: color-mix(in oklch, var(--brand-primary) 45%, var(--brand-card));
+  --chart-4: color-mix(in oklch, var(--brand-accent) 45%, var(--brand-card));
+  --chart-5: color-mix(in oklch, var(--brand-background-fg) 45%, var(--brand-card));
+}
+
+/* Dark mode keeps the brand hues and swaps the surfaces. */
+.dark {
+  --background: oklch(0.17 0.008 50);
+  --foreground: oklch(0.96 0.005 70);
+  --card: oklch(0.215 0.01 50);
+  --card-foreground: oklch(0.96 0.005 70);
+  --popover: oklch(0.235 0.01 50);
+  --popover-foreground: oklch(0.96 0.005 70);
+  --primary: color-mix(in oklch, var(--brand-primary) 55%, white);
+  --primary-foreground: oklch(0.17 0.008 50);
+  --secondary: oklch(0.28 0.012 50);
+  --secondary-foreground: oklch(0.96 0.005 70);
+  --muted: oklch(0.26 0.01 50);
+  --muted-foreground: oklch(0.72 0.01 70);
+  --accent: oklch(0.29 0.014 50);
+  --accent-foreground: oklch(0.96 0.005 70);
+  --highlight: color-mix(in oklch, var(--brand-accent) 60%, white);
+  --highlight-foreground: oklch(0.17 0.008 50);
+  --destructive: oklch(0.7 0.19 22);
+  --success: oklch(0.74 0.14 150);
+  --warning: oklch(0.8 0.13 80);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 18%);
+  --ring: color-mix(in oklch, var(--brand-primary) 45%, white);
+  --sidebar: color-mix(in oklch, var(--brand-sidebar) 45%, oklch(0.14 0.008 50));
+  --sidebar-foreground: oklch(0.95 0.005 70);
+  --sidebar-primary: oklch(0.95 0.005 70);
+  --sidebar-primary-foreground: oklch(0.17 0.008 50);
+  --sidebar-accent: oklch(1 0 0 / 10%);
+  --sidebar-accent-foreground: oklch(0.97 0.005 70);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(1 0 0 / 40%);
+  --navbar: oklch(0.2 0.009 50);
+  --navbar-foreground: oklch(0.96 0.005 70);
+  --button: var(--brand-button);
+  --button-foreground: var(--brand-button-fg);
+  --link: color-mix(in oklch, var(--brand-link) 45%, white);
+  --chart-1: color-mix(in oklch, var(--brand-primary) 55%, white);
+  --chart-2: color-mix(in oklch, var(--brand-accent) 70%, white);
+  --chart-3: color-mix(in oklch, var(--brand-primary) 30%, oklch(0.5 0.01 50));
+  --chart-4: color-mix(in oklch, var(--brand-accent) 35%, oklch(0.5 0.01 50));
+  --chart-5: oklch(0.65 0.01 70);
+}
+
+/*
+ * Scrollbars take the sidebar colour chosen in Appearance settings. Inside
+ * the sidebar itself the thumb uses the sidebar text colour instead, or it
+ * would disappear into its own background.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+:root,
+.theme-scope {
+  --scrollbar-thumb: var(--brand-sidebar);
+}
+
+.dark {
+  /* The sidebar colour is too dark to see on dark surfaces; keep its hue, lift it. */
+  --scrollbar-thumb: color-mix(in oklch, var(--brand-sidebar) 55%, white);
+}
+
+.bg-sidebar,
+.bg-sidebar * {
+  --scrollbar-thumb: color-mix(in oklch, var(--sidebar-foreground) 40%, transparent);
+}
+
+/* Shows through transparent parts of an image preview. */
+.checkerboard {
+  background-color: var(--card);
+  background-image: conic-gradient(
+    color-mix(in oklch, var(--foreground) 12%, transparent) 25%,
+    transparent 0 50%,
+    color-mix(in oklch, var(--foreground) 12%, transparent) 0 75%,
+    transparent 0
+  );
+  background-size: 12px 12px;
+}
+
+/* Route-change progress bar: waits a moment, then creeps toward the end. */
+@keyframes navigation-progress {
+  0% {
+    width: 0;
+    opacity: 0;
+  }
+  1% {
+    width: 8%;
+    opacity: 1;
+  }
+  40% {
+    width: 62%;
+  }
+  100% {
+    width: 92%;
+    opacity: 1;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.navigation-progress-bar {
+  width: 0;
+  opacity: 0;
+  animation: navigation-progress 8s cubic-bezier(0.1, 0.6, 0.2, 1) 0.12s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navigation-progress-bar {
+    animation: none;
+    width: 100%;
+    opacity: 0.6;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  /* Native date/select controls follow the active mode. */
+  :root {
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+  .theme-scope {
+    color-scheme: light;
+    color: var(--foreground);
+  }
 }
