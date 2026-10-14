@@ -16,7 +16,14 @@ import { ThemeToggle } from "@/components/app/theme-toggle";
 import { UserMenu } from "@/components/app/user-menu";
 import { NAV, PAGE_TITLES, type NavItem } from "@/lib/nav";
 
-export type ShellUser = { id: string; name: string; email: string; roleNames: string[] };
+export type ShellUser = {
+  id: string;
+  name: string;
+  email: string;
+  roleNames: string[];
+  /** Photo of the member this login is linked to, if any (short-lived signed URL). */
+  photoUrl: string | null;
+};
 export type ShellBrand = {
   name: string;
   shortName: string;

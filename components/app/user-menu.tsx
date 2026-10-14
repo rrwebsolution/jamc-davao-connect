@@ -26,7 +26,7 @@ export function UserMenu({ user }: { user: ShellUser }) {
         className="flex items-center gap-2 rounded-full p-0.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         aria-label="Account menu"
       >
-        <PersonAvatar name={user.name} className="size-8" />
+        <PersonAvatar name={user.name} src={user.photoUrl} className="size-8" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
         <DropdownMenuGroup>

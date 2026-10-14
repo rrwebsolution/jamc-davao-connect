@@ -170,12 +170,12 @@ export function AccountSheet({ user, allowThemeToggle }: { user: ShellUser; allo
         aria-haspopup="dialog"
         className="flex size-11 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <PersonAvatar name={user.name} className="size-8" />
+        <PersonAvatar name={user.name} src={user.photoUrl} className="size-8" />
       </button>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom" className={sheetClass}>
           <SheetHeader className="flex-row items-center gap-3 border-b px-5 py-4">
-            <PersonAvatar name={user.name} className="size-11" />
+            <PersonAvatar name={user.name} src={user.photoUrl} className="size-11" />
             <div className="min-w-0 text-left">
               <SheetTitle className="truncate">{user.name}</SheetTitle>
               <SheetDescription className="truncate">{user.roleNames.join(", ") || user.email}</SheetDescription>

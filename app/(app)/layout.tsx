@@ -8,6 +8,7 @@ import { requireAccess } from "@/lib/auth/session";
 import { backgroundActive, surfaceVariables } from "@/lib/background";
 import { createClient } from "@/lib/supabase/server";
 import { brandingAssetUrl, getBranding } from "@/lib/branding";
+import { signPhotoUrls } from "@/lib/data/common";
 import { isSupabaseConfigured } from "@/lib/env";
 
 function ShellSkeleton() {
@@ -28,6 +29,15 @@ function ShellSkeleton() {
 // Reads the session, so it renders behind the Suspense boundary below.
 async function AuthenticatedShell({ children }: { children: ReactNode }) {
   const [access, branding] = await Promise.all([requireAccess(), getBranding()]);
+
+  // The photo of the member this login is linked to, for the avatar in the header.
+  // The bucket is private; RLS lets everyone read and sign their own record.
+  let photoUrl: string | null = null;
+  if (access.personId) {
+    const supabase = await createClient();
+    const { data: me } = await supabase.from("people").select("photo_path").eq("id", access.personId).maybeSingle();
+    if (me?.photo_path) photoUrl = (await signPhotoUrls([me.photo_path]))[me.photo_path] ?? null;
+  }
 
   // Shown as a badge beside "Account Approvals". Counted only for people who can act on it.
   let pendingApprovals = 0;
@@ -66,6 +76,7 @@ async function AuthenticatedShell({ children }: { children: ReactNode }) {
         name: access.fullName,
         email: access.email,
         roleNames: access.roles.map((role) => role.name),
+        photoUrl,
       }}
       permissions={access.permissions}
       allowThemeToggle={branding.allow_user_theme_override}
