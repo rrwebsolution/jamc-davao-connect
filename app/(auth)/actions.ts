@@ -1,10 +1,10 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { homePathFor } from "@/lib/auth/permissions";
 import { getAccess, getAccountState } from "@/lib/auth/session";
 import { describeError, INVALID_INPUT } from "@/lib/errors";
+import { siteUrl } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types";
 import { forgotPasswordSchema, loginSchema, passwordSchema, signUpSchema } from "@/lib/validation";
@@ -55,8 +55,8 @@ export async function signUp(input: unknown): Promise<ActionResult> {
   }
   const { email, password, first_name, middle_name, last_name, mobile_number, is_existing_member, member_hint } = parsed.data;
 
-  const headerList = await headers();
-  const origin = headerList.get("origin") ?? `https://${headerList.get("host")}`;
+  // Email links go to the live site, wherever the request came from (see lib/site-url.ts).
+  const origin = await siteUrl();
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
@@ -114,8 +114,8 @@ export async function requestPasswordReset(input: unknown): Promise<ActionResult
     return INVALID_INPUT;
   }
 
-  const headerList = await headers();
-  const origin = headerList.get("origin") ?? `https://${headerList.get("host")}`;
+  // Email links go to the live site, wherever the request came from (see lib/site-url.ts).
+  const origin = await siteUrl();
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {

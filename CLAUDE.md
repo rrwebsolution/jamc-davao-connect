@@ -33,6 +33,7 @@ Before calling work done: `npm run db:test`, `npm run typecheck`, `npm run lint`
 | `NEXT_PUBLIC_SUPABASE_URL` | app | |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | app | The anon key under its new name; `NEXT_PUBLIC_SUPABASE_ANON_KEY` is accepted too |
 | `SUPABASE_SECRET_KEY` | server only | Service-role key. Needed to create users, send invitations and change login emails. Never import it into client code. |
+| `NEXT_PUBLIC_SITE_URL` | app, optional | Where links in emails point. Defaults to the Vercel production domain (`lib/site-url.ts`), or the request address locally. |
 | `SUPABASE_DB_URL` | scripts only | Postgres connection string for `db:migrate` and the demo scripts. Not needed on the hosting platform. |
 
 They live in `.env.local` (git-ignored); `.env.example` lists the names. Never print or paste their values: when checking them, show names or lengths only.
@@ -100,4 +101,4 @@ The dev server does not always pick up Tailwind classes that are used for the fi
 
 ## Deployment
 
-Hosted on Vercel (`vercel.json`). Set the first three environment variables above in the Vercel project. Functions run in `hnd1` (Tokyo) to sit next to the Supabase database. In Supabase Auth, set the Site URL and redirect URLs to the deployed domain, and configure SMTP if invitation or password-reset emails are needed.
+Hosted on Vercel (`vercel.json`). Set the first three environment variables above in the Vercel project. Functions run in `hnd1` (Tokyo) to sit next to the Supabase database. In Supabase Auth, set the Site URL to `https://jamc-davao-connect.vercel.app` and allow `https://jamc-davao-connect.vercel.app/**` and `http://localhost:3000/**` as redirect URLs. Email links are built by `lib/site-url.ts`; the branded email templates are in `supabase/email-templates/` (pasted into the dashboard by hand). Custom SMTP is needed to send as "JAMC Davao Connect" instead of "Supabase Auth".

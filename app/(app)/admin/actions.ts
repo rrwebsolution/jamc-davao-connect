@@ -1,6 +1,5 @@
 "use server";
 
-import { headers } from "next/headers";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { P } from "@/lib/auth/permissions";
@@ -8,6 +7,7 @@ import { getAccess, getAccessWith } from "@/lib/auth/session";
 import { isUuid } from "@/lib/data/common";
 import { fail, INVALID_INPUT, NOT_ALLOWED } from "@/lib/errors";
 import { createAdminClient, isAdminConfigured } from "@/lib/supabase/admin";
+import { siteUrl } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types";
 import { approvalSchema, loginEmailSchema, memberAccountSchema, roleSchema } from "@/lib/validation";
@@ -21,10 +21,8 @@ const NO_ADMIN_KEY: ActionResult<never> = {
 
 type Admin = ReturnType<typeof createAdminClient>;
 
-async function requestOrigin() {
-  const headerList = await headers();
-  return headerList.get("origin") ?? `https://${headerList.get("host")}`;
-}
+/** Where links in invitation and reset emails point: the live site (see lib/site-url.ts). */
+const requestOrigin = siteUrl;
 
 /** Emails an invitation; the person chooses their own password from the link. */
 async function invite(admin: Admin, email: string, fullName: string) {
