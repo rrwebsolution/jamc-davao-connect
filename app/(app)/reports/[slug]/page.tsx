@@ -85,7 +85,24 @@ async function ReportContent({ params, searchParams }: PageProps<"/reports/[slug
         <EmptyState title="No data for this report." description={hasFilters ? "Try different filters." : "There is nothing to report yet."} />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border bg-card print:overflow-visible print:rounded-none print:border-0">
+          <ul data-reveal-list="" className="space-y-2 md:hidden print:hidden">
+            {result.rows.map((row, index) => (
+              <li key={index} className="rounded-xl border bg-card p-3">
+                <p className="text-sm font-medium">{row[result.columns[0].key] || "—"}</p>
+                <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                  {result.columns.slice(1).map((column) => (
+                    <div key={column.key} className="min-w-0">
+                      <dt className="truncate text-muted-foreground">{column.label}</dt>
+                      <dd className="truncate tabular-nums">
+                        {typeof row[column.key] === "number" ? Number(row[column.key]).toLocaleString("en-PH") : row[column.key] || "—"}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto rounded-xl border bg-card md:block print:block print:overflow-visible print:rounded-none print:border-0">
             <Table>
               <TableHeader>
                 <TableRow>

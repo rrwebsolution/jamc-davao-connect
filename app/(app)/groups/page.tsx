@@ -12,7 +12,7 @@ import { StatusPill } from "@/components/shared/person-avatar";
 import { EmptyState, LoadError, PageHeader, PageSkeleton } from "@/components/shared/states";
 import { can, P } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
-import { cleanSearchTerm, PAGE_SIZE, parseListParams } from "@/lib/data/common";
+import { cleanSearchTerm, getListParams } from "@/lib/data/common";
 import { groupFields, type GroupRow } from "@/lib/data/groups";
 import { getPeopleOptions, WEEKDAYS } from "@/lib/data/options";
 import { titleCase } from "@/lib/format";
@@ -23,7 +23,7 @@ export const metadata: Metadata = { title: "Cell Groups" };
 
 async function GroupsContent({ searchParams }: Pick<PageProps<"/groups">, "searchParams">) {
   const access = await requireAccess();
-  const { params, page, from } = parseListParams(await searchParams);
+  const { params, page, from, pageSize } = await getListParams(await searchParams);
   const canManage = can(access, P.groupsManage);
 
   // No page-level gate: RLS returns all groups to group viewers, a leader's
@@ -41,7 +41,7 @@ async function GroupsContent({ searchParams }: Pick<PageProps<"/groups">, "searc
   if (term) query = query.or(`name.ilike.%${term}%,location.ilike.%${term}%`);
 
   const [{ data, count, error }, members] = await Promise.all([
-    query.order("name").range(from, from + PAGE_SIZE - 1),
+    query.order("name").range(from, from + pageSize - 1),
     canManage ? getPeopleOptions("member") : [],
   ]);
   if (error) {
@@ -138,7 +138,7 @@ async function GroupsContent({ searchParams }: Pick<PageProps<"/groups">, "searc
               </li>
             ))}
           </ul>
-          <Pagination params={params} page={page} pageSize={PAGE_SIZE} total={count ?? 0} />
+          <Pagination params={params} page={page} pageSize={pageSize} total={count ?? 0} />
         </>
       )}
     </>

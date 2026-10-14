@@ -73,4 +73,14 @@ if (assignError) {
   process.exit(1);
 }
 
+// New accounts start pending; the first administrator has nobody to approve them.
+const { error: approveError } = await supabase
+  .from("profiles")
+  .update({ approval_status: "approved", account_status: "active", registration_source: "admin_created", approved_at: new Date().toISOString() })
+  .eq("id", userId);
+if (approveError) {
+  console.error(`Could not activate the account: ${approveError.message}`);
+  process.exit(1);
+}
+
 console.log(`${email} is now a Super Admin. Sign in at /login.`);

@@ -1,6 +1,10 @@
 // Shared by the server (root layout) and the client (live preview in
 // Appearance settings), so it must stay free of server-only imports.
 
+import { DEFAULT_BACKGROUND, type SystemBackgroundSettings } from "@/lib/background";
+import { DEFAULT_MOTION, type MotionSettings } from "@/lib/motion";
+import { DEFAULT_TYPOGRAPHY, type Typography } from "@/lib/typography";
+
 export const COLOR_FIELDS = [
   { key: "primary_color", label: "Primary", hint: "Brand colour: active navigation, highlights, charts" },
   { key: "secondary_color", label: "Secondary", hint: "Soft surfaces such as secondary buttons and tags" },
@@ -19,7 +23,27 @@ export type ColorKey = (typeof COLOR_FIELDS)[number]["key"];
 export type ThemeColors = Record<ColorKey, string>;
 export type ThemeMode = "light" | "dark" | "system";
 
-export type Branding = ThemeColors & {
+/** The text beside the sign-in form. Hiding a part keeps what was written. */
+export type LoginContent = {
+  login_welcome_message: string;
+  show_login_welcome_message: boolean;
+  login_bible_verse: string;
+  /** Kept apart from the verse so it can be styled, or left out, on its own. */
+  login_bible_verse_reference: string;
+  show_login_bible_verse: boolean;
+};
+
+export const DEFAULT_LOGIN_CONTENT: LoginContent = {
+  login_welcome_message: "Connecting people. Strengthening discipleship. Caring for every person.",
+  show_login_welcome_message: true,
+  login_bible_verse: "Let us consider how we may spur one another on toward love and good deeds.",
+  login_bible_verse_reference: "Hebrews 10:24",
+  show_login_bible_verse: true,
+};
+
+export const LOGIN_CONTENT_LIMITS = { login_welcome_message: 200, login_bible_verse: 300, login_bible_verse_reference: 80 } as const;
+
+export type Branding = ThemeColors & Typography & LoginContent & MotionSettings & SystemBackgroundSettings & {
   church_name: string;
   system_name: string;
   system_short_name: string;
@@ -56,6 +80,10 @@ export const DEFAULT_COLORS: ThemeColors = {
 
 export const DEFAULT_BRANDING: Branding = {
   ...DEFAULT_COLORS,
+  ...DEFAULT_TYPOGRAPHY,
+  ...DEFAULT_LOGIN_CONTENT,
+  ...DEFAULT_MOTION,
+  ...DEFAULT_BACKGROUND,
   church_name: "JAMC-Davao",
   system_name: "JAMC Davao Connect",
   system_short_name: "JAMC Connect",

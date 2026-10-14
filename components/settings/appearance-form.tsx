@@ -10,9 +10,15 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ConfirmButton } from "@/components/shared/confirm-button";
 import { Field, FormSection, NativeSelect, PendingButton } from "@/components/shared/form";
+import { BackgroundSection } from "@/components/settings/background-fields";
+import { LoginContentSection } from "@/components/settings/login-content-fields";
+import { MotionSection } from "@/components/settings/motion-fields";
+import { TypographySection } from "@/components/settings/typography-fields";
+import { BACKGROUND_RESET } from "@/lib/background";
 import { removeBackground } from "@/lib/image-tools";
 import { createClient } from "@/lib/supabase/client";
-import { brandVariables, COLOR_FIELDS, contrastRatio, HEX_COLOR, type Branding, type ColorKey } from "@/lib/theme";
+import { brandVariables, COLOR_FIELDS, contrastRatio, DEFAULT_LOGIN_CONTENT, HEX_COLOR, type Branding, type ColorKey } from "@/lib/theme";
+import { DEFAULT_TYPOGRAPHY } from "@/lib/typography";
 import { appearanceSchema } from "@/lib/validation";
 
 const ASSETS = [
@@ -136,9 +142,26 @@ export function AppearanceForm({
     setPreviews({ ...objectUrls.current });
   }
 
+  // The system background picture, chosen but not uploaded yet (it is uploaded on Save).
+  const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
+  const [backgroundPreview, setBackgroundPreview] = useState<string | null>(null);
+  const backgroundUrl = useRef<string | null>(null);
+  useEffect(
+    () => () => {
+      if (backgroundUrl.current) URL.revokeObjectURL(backgroundUrl.current);
+    },
+    [],
+  );
+  function chooseBackground(file: File | null) {
+    if (backgroundUrl.current) URL.revokeObjectURL(backgroundUrl.current);
+    backgroundUrl.current = file ? URL.createObjectURL(file) : null;
+    setBackgroundFile(file);
+    setBackgroundPreview(backgroundUrl.current);
+  }
+
   const dirty = useMemo(
-    () => JSON.stringify(values) !== JSON.stringify(saved) || Object.keys(files).length > 0,
-    [values, saved, files],
+    () => JSON.stringify(values) !== JSON.stringify(saved) || Object.keys(files).length > 0 || backgroundFile !== null,
+    [values, saved, files, backgroundFile],
   );
   const set = <K extends keyof Values>(key: K, value: Values[K]) => setValues((current) => ({ ...current, [key]: value }));
 
@@ -227,6 +250,7 @@ export function AppearanceForm({
     originals.current = {};
     setCleaned({});
     setFiles({});
+    chooseBackground(null);
   }
 
   function cancel() {
@@ -253,6 +277,15 @@ export function AppearanceForm({
         }
         next[key] = path;
       }
+      if (backgroundFile) {
+        const path = `system-background-${crypto.randomUUID()}.webp`;
+        const { error } = await supabase.storage.from("branding").upload(path, backgroundFile, { contentType: backgroundFile.type });
+        if (error) {
+          toast.error("The background picture could not be uploaded. Nothing was saved.");
+          return;
+        }
+        next.system_background_path = path;
+      }
 
       const result = await saveAppearance(next);
       if (!result.ok) {
@@ -262,7 +295,7 @@ export function AppearanceForm({
       setValues(next);
       setSaved(next);
       clearFiles();
-      toast.success("Branding and theme saved");
+      toast.success("Appearance saved");
       router.refresh();
     });
   }
@@ -398,6 +431,42 @@ export function AppearanceForm({
         <p className="mt-3 text-xs text-muted-foreground">PNG, JPG, WebP or ICO, up to 2 MB each. Images are saved when you save changes.</p>
       </FormSection>
 
+      <LoginContentSection
+        values={values}
+        colors={values}
+        typography={values}
+        systemName={values.system_name || "JAMC Davao Connect"}
+        tagline={values.tagline}
+        hasBackground={Boolean(previews.login_background_path ?? values.login_background_path)}
+        set={(key, value) => setValues((current) => ({ ...current, [key]: value }))}
+        disabled={pending}
+        onReset={() => {
+          // The defaults are saved already; show them without losing other unsaved edits.
+          setValues((current) => ({ ...current, ...DEFAULT_LOGIN_CONTENT }));
+          setSaved((current) => ({ ...current, ...DEFAULT_LOGIN_CONTENT }));
+        }}
+      />
+
+      <BackgroundSection
+        values={values}
+        colors={values}
+        shortName={values.system_short_name || "JAMC Connect"}
+        imageUrl={backgroundPreview ?? (values.system_background_path ? `${assetBaseUrl}/${values.system_background_path}` : null)}
+        onChoose={chooseBackground}
+        onRemove={() => {
+          // Removed from the form now; the file itself is deleted when this is saved.
+          chooseBackground(null);
+          setValues((current) => ({ ...current, system_background_path: null, system_background_enabled: false }));
+        }}
+        set={(key, value) => setValues((current) => ({ ...current, [key]: value }))}
+        disabled={pending}
+        onReset={() => {
+          // The defaults are saved already; the picture is kept. Show them without losing other unsaved edits.
+          setValues((current) => ({ ...current, ...BACKGROUND_RESET }));
+          setSaved((current) => ({ ...current, ...BACKGROUND_RESET }));
+        }}
+      />
+
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
         <FormSection title="Colours" description="Pick a colour or type a HEX value. The preview updates as you go; nothing is saved until you save.">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -480,6 +549,22 @@ export function AppearanceForm({
         </div>
       </div>
 
+      <TypographySection
+        values={values}
+        colors={values}
+        systemName={values.system_name || "JAMC Davao Connect"}
+        tagline={values.tagline}
+        set={(key, value) => setValues((current) => ({ ...current, [key]: value }))}
+        disabled={pending}
+        onReset={() => {
+          // The defaults are saved already; show them without losing other unsaved edits.
+          setValues((current) => ({ ...current, ...DEFAULT_TYPOGRAPHY }));
+          setSaved((current) => ({ ...current, ...DEFAULT_TYPOGRAPHY }));
+        }}
+      />
+
+      <MotionSection values={values} set={(key, value) => setValues((current) => ({ ...current, [key]: value }))} />
+
       <div className="sticky bottom-0 -mx-4 flex flex-col gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur max-md:bottom-[calc(3.5rem+env(safe-area-inset-bottom))] sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <ConfirmButton
           action={resetAppearance}
@@ -491,7 +576,7 @@ export function AppearanceForm({
           variant="ghost"
           disabled={pending}
         >
-          <RotateCcw /> Reset to default
+          <RotateCcw /> Reset colours to default
         </ConfirmButton>
         <div className="flex gap-2">
           <Button variant="outline" onClick={cancel} disabled={!dirty || pending}>

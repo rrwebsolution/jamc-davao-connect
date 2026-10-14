@@ -12,7 +12,7 @@ import { StatusPill } from "@/components/shared/person-avatar";
 import { EmptyState, LoadError, NoAccess, PageHeader, PageSkeleton } from "@/components/shared/states";
 import { can } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
-import { cleanSearchTerm, getChurchSettings, getChurchToday, PAGE_SIZE, parseListParams } from "@/lib/data/common";
+import { cleanSearchTerm, getChurchSettings, getChurchToday, getListParams } from "@/lib/data/common";
 import { EVENT_FIELDS, EVENT_TONE, eventValues, type EventRow } from "@/lib/data/events";
 import { EVENT_STATUSES, EVENT_TYPES, labelOf } from "@/lib/data/options";
 import { formatDate } from "@/lib/format";
@@ -90,7 +90,7 @@ async function EventsContent({ searchParams }: Pick<PageProps<"/events">, "searc
   if (!can(access, "events.view", "events.manage")) {
     return <NoAccess />;
   }
-  const { params, page, from } = parseListParams(await searchParams);
+  const { params, page, from, pageSize } = await getListParams(await searchParams);
   const canManage = can(access, "events.manage");
   const [today, settings] = await Promise.all([getChurchToday(), getChurchSettings()]);
 
@@ -110,7 +110,7 @@ async function EventsContent({ searchParams }: Pick<PageProps<"/events">, "searc
     if (term) query = query.or(`name.ilike.%${term}%,venue.ilike.%${term}%`);
   }
   const ordered = query.order("event_date", { ascending: params.when !== "past" }).order("start_time", { nullsFirst: true });
-  const { data, count, error } = calendar ? await ordered.limit(500) : await ordered.range(from, from + PAGE_SIZE - 1);
+  const { data, count, error } = calendar ? await ordered.limit(500) : await ordered.range(from, from + pageSize - 1);
   if (error) {
     console.error("Failed to load events", describeError(error));
     return <LoadError what="the events" />;
@@ -235,7 +235,7 @@ async function EventsContent({ searchParams }: Pick<PageProps<"/events">, "searc
                   </li>
                 ))}
               </ul>
-              <Pagination params={params} page={page} pageSize={PAGE_SIZE} total={count ?? 0} />
+              <Pagination params={params} page={page} pageSize={pageSize} total={count ?? 0} />
             </>
           )}
         </>

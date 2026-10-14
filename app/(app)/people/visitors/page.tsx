@@ -13,7 +13,7 @@ import { EmptyState, LoadError, NoAccess, PageHeader, PageSkeleton } from "@/com
 import { VisitorStatusPill } from "@/components/people/visitor-status";
 import { can, P } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
-import { getChurchSettings, PAGE_SIZE, parseListParams, signPhotoUrls } from "@/lib/data/common";
+import { getChurchSettings, getListParams, signPhotoUrls } from "@/lib/data/common";
 import { listPeople } from "@/lib/data/people";
 import { formatDate } from "@/lib/format";
 import { VISITOR_STATUSES, type Person } from "@/lib/types";
@@ -26,7 +26,7 @@ async function VisitorsContent({ searchParams }: Pick<PageProps<"/people/visitor
     return <NoAccess />;
   }
 
-  const { params, page, from } = parseListParams(await searchParams);
+  const { params, page, from, pageSize } = await getListParams(await searchParams);
   const [list, settings] = await Promise.all([listPeople("visitor", params, from), getChurchSettings()]);
   const photos = await signPhotoUrls(list.rows.map((row) => row.photo_path));
 
@@ -119,7 +119,7 @@ async function VisitorsContent({ searchParams }: Pick<PageProps<"/people/visitor
         />
       ) : (
         <>
-          <ul className="space-y-2 lg:hidden">
+          <ul data-reveal-list="" className="space-y-2 lg:hidden">
             {list.rows.map((person) => (
               <li key={person.id} className="rounded-xl border bg-card p-3">
                 <div className="flex items-start gap-3">
@@ -186,7 +186,7 @@ async function VisitorsContent({ searchParams }: Pick<PageProps<"/people/visitor
             </Table>
           </div>
 
-          <Pagination params={params} page={page} pageSize={PAGE_SIZE} total={list.total} />
+          <Pagination params={params} page={page} pageSize={pageSize} total={list.total} />
         </>
       )}
     </>

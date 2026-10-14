@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import {
   Bar,
   BarChart,
@@ -13,6 +14,21 @@ import {
 } from "recharts";
 
 export type ChartPoint = { label: string; value: number; detail?: string };
+
+const never = () => () => {};
+/**
+ * Whether charts may animate: not when animations are off in Appearance
+ * settings, and not when the device asks for reduced motion. The drawing-in
+ * happens when a chart appears or its data changes, never on hover.
+ */
+function useChartMotion() {
+  const allowed = useSyncExternalStore(
+    never,
+    () => document.documentElement.dataset.motion !== "off" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => false,
+  );
+  return { isAnimationActive: allowed, animationDuration: 500, animationEasing: "ease-out" as const };
+}
 
 // Every dashboard chart shows one measure, so each uses a single series in
 // the brand colour and is named by its card title rather than a legend.
@@ -41,6 +57,7 @@ function ChartTooltip({ unit }: { unit: string }) {
 }
 
 export function TrendLine({ data, unit }: { data: ChartPoint[]; unit: string }) {
+  const motion = useChartMotion();
   return (
     <ResponsiveContainer width="100%" height={220}>
       <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -18 }}>
@@ -55,7 +72,7 @@ export function TrendLine({ data, unit }: { data: ChartPoint[]; unit: string }) 
           strokeWidth={2}
           dot={{ r: 3, fill: "var(--chart-1)", stroke: "var(--card)", strokeWidth: 2 }}
           activeDot={{ r: 5, stroke: "var(--card)", strokeWidth: 2 }}
-          isAnimationActive={false}
+          {...motion}
         />
       </LineChart>
     </ResponsiveContainer>
@@ -63,6 +80,7 @@ export function TrendLine({ data, unit }: { data: ChartPoint[]; unit: string }) 
 }
 
 export function Bars({ data, unit }: { data: ChartPoint[]; unit: string }) {
+  const motion = useChartMotion();
   return (
     <ResponsiveContainer width="100%" height={220}>
       <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -18 }}>
@@ -70,7 +88,7 @@ export function Bars({ data, unit }: { data: ChartPoint[]; unit: string }) {
         <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={{ stroke: "var(--border)" }} minTickGap={8} />
         <YAxis tick={axis} tickLine={false} axisLine={false} allowDecimals={false} width={48} />
         <ChartTooltip unit={unit} />
-        <Bar dataKey="value" fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
+        <Bar dataKey="value" fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={28} {...motion} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -78,6 +96,7 @@ export function Bars({ data, unit }: { data: ChartPoint[]; unit: string }) {
 
 /** Horizontal bars, for categories with longer names. */
 export function RankedBars({ data, unit }: { data: ChartPoint[]; unit: string }) {
+  const motion = useChartMotion();
   return (
     <ResponsiveContainer width="100%" height={Math.max(160, data.length * 34 + 24)}>
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
@@ -85,7 +104,7 @@ export function RankedBars({ data, unit }: { data: ChartPoint[]; unit: string })
         <XAxis type="number" tick={axis} tickLine={false} axisLine={false} allowDecimals={false} />
         <YAxis type="category" dataKey="label" tick={axis} tickLine={false} axisLine={{ stroke: "var(--border)" }} width={124} />
         <ChartTooltip unit={unit} />
-        <Bar dataKey="value" fill="var(--chart-1)" radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={false} />
+        <Bar dataKey="value" fill="var(--chart-1)" radius={[0, 4, 4, 0]} maxBarSize={18} {...motion} />
       </BarChart>
     </ResponsiveContainer>
   );

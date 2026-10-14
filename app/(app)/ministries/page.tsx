@@ -11,7 +11,7 @@ import { StatusPill } from "@/components/shared/person-avatar";
 import { EmptyState, LoadError, NoAccess, PageHeader, PageSkeleton } from "@/components/shared/states";
 import { can, P } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
-import { cleanSearchTerm, PAGE_SIZE, parseListParams } from "@/lib/data/common";
+import { cleanSearchTerm, getListParams } from "@/lib/data/common";
 import { getPeopleOptions, type SelectOption } from "@/lib/data/options";
 import { createClient } from "@/lib/supabase/server";
 import { describeError } from "@/lib/errors";
@@ -46,7 +46,7 @@ async function MinistriesContent({ searchParams }: Pick<PageProps<"/ministries">
   if (!can(access, P.ministriesView, P.ministriesManage)) {
     return <NoAccess />;
   }
-  const { params, page, from } = parseListParams(await searchParams);
+  const { params, page, from, pageSize } = await getListParams(await searchParams);
   const canManage = can(access, P.ministriesManage);
 
   const supabase = await createClient();
@@ -61,7 +61,7 @@ async function MinistriesContent({ searchParams }: Pick<PageProps<"/ministries">
   if (term) query = query.ilike("name", `%${term}%`);
 
   const [{ data, count, error }, members] = await Promise.all([
-    query.order("sort_order").order("name").range(from, from + PAGE_SIZE - 1),
+    query.order("sort_order").order("name").range(from, from + pageSize - 1),
     canManage ? getPeopleOptions("member") : [],
   ]);
   if (error) {
@@ -146,7 +146,7 @@ async function MinistriesContent({ searchParams }: Pick<PageProps<"/ministries">
               </li>
             ))}
           </ul>
-          <Pagination params={params} page={page} pageSize={PAGE_SIZE} total={count ?? 0} />
+          <Pagination params={params} page={page} pageSize={pageSize} total={count ?? 0} />
         </>
       )}
     </>

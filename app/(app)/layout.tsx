@@ -1,8 +1,12 @@
-import { Suspense, type ReactNode } from "react";
+import { Suspense, type CSSProperties, type ReactNode } from "react";
 import { AppShell } from "@/components/app/app-shell";
 import { SetupNotice } from "@/components/app/setup-notice";
+import { SystemBackground } from "@/components/app/system-background";
 import { Skeleton } from "@/components/ui/skeleton";
+import { can, P } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
+import { backgroundActive, surfaceVariables } from "@/lib/background";
+import { createClient } from "@/lib/supabase/server";
 import { brandingAssetUrl, getBranding } from "@/lib/branding";
 import { isSupabaseConfigured } from "@/lib/env";
 
@@ -25,8 +29,31 @@ function ShellSkeleton() {
 async function AuthenticatedShell({ children }: { children: ReactNode }) {
   const [access, branding] = await Promise.all([requireAccess(), getBranding()]);
 
+  // Shown as a badge beside "Account Approvals". Counted only for people who can act on it.
+  let pendingApprovals = 0;
+  if (can(access, P.usersManage)) {
+    const supabase = await createClient();
+    const { count } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("approval_status", "pending")
+      .eq("registration_source", "self_signup");
+    pendingApprovals = count ?? 0;
+  }
+
+  // The system background (not the login one). It lives here, outside the
+  // pages, so it stays mounted and does not flicker while they change.
+  const background = backgroundActive(branding) ? brandingAssetUrl(branding.system_background_path) : null;
+
   return (
-    <AppShell
+    <div
+      className="contents"
+      data-system-bg={background ? "on" : undefined}
+      data-card-style={background ? branding.card_background_style : undefined}
+      style={background ? (surfaceVariables(branding) as CSSProperties) : undefined}
+    >
+      {background ? <SystemBackground imageUrl={background} settings={branding} /> : null}
+      <AppShell
       brand={{
         name: branding.system_name,
         shortName: branding.system_short_name,
@@ -41,9 +68,11 @@ async function AuthenticatedShell({ children }: { children: ReactNode }) {
       }}
       permissions={access.permissions}
       allowThemeToggle={branding.allow_user_theme_override}
+      badges={pendingApprovals > 0 ? { "/admin/approvals": pendingApprovals } : {}}
     >
       {children}
     </AppShell>
+    </div>
   );
 }
 

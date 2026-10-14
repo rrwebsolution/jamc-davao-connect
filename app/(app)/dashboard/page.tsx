@@ -82,11 +82,13 @@ function StatCard({
   );
   const className = "block rounded-xl border bg-card p-3 shadow-xs sm:p-4";
   return href ? (
-    <Link href={href} className={`${className} transition-colors hover:border-ring`}>
+    <Link href={href} data-reveal="" className={`${className} motion-card hover:border-ring`}>
       {body}
     </Link>
   ) : (
-    <div className={className}>{body}</div>
+    <div data-reveal="" className={className}>
+      {body}
+    </div>
   );
 }
 
@@ -170,7 +172,7 @@ async function DashboardContent() {
 
   const supabase = await createClient();
   // One round trip for everything that doesn't depend on another result.
-  const [statsResult, settings, extrasResult, followUps, demo] = await Promise.all([
+  const [statsResult, settings, extrasResult, followUps, demo, approvals] = await Promise.all([
     supabase.rpc("dashboard_stats"),
     getChurchSettings(),
     supabase.rpc("dashboard_extras"),
@@ -183,6 +185,9 @@ async function DashboardContent() {
       .order("due_date", { ascending: true, nullsFirst: false })
       .limit(5),
     supabase.rpc("has_demo_data"),
+    can(access, P.usersManage)
+      ? supabase.from("profiles").select("id", { count: "exact", head: true }).eq("approval_status", "pending").eq("registration_source", "self_signup")
+      : null,
   ]);
   const stats = statsResult.data as Stats | null;
   if (statsResult.error || !stats) {
@@ -251,7 +256,7 @@ async function DashboardContent() {
         </p>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+      <div data-reveal-list="" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {seesMembers ? (
           <>
             <StatCard icon={Users} label={`Total members${scopeNote}`} value={String(stats.total_members)} href="/people/members">
@@ -308,6 +313,13 @@ async function DashboardContent() {
             {extras.overdue_follow_ups ? `${extras.overdue_follow_ups} overdue` : "None overdue"}
           </p>
         </StatCard>
+        {approvals ? (
+          <StatCard icon={UserCheck} label="Pending account approvals" value={String(approvals.count ?? 0)} href="/admin/approvals">
+            <p className={`mt-2 text-xs ${approvals.count ? "font-medium text-highlight" : "text-muted-foreground"}`}>
+              {approvals.count ? "Review registrations" : "Nothing waiting"}
+            </p>
+          </StatCard>
+        ) : null}
         {seesEvents ? (
           <StatCard icon={CalendarDays} label="Upcoming events" value={String(extras.upcoming_events ?? 0)} href="/events">
             <p className="mt-2 text-xs text-muted-foreground">
@@ -392,7 +404,7 @@ async function DashboardContent() {
             {birthdayRows.length === 0 ? (
               emptyRow("No birthdays in the next 30 days.")
             ) : (
-              <ul className="divide-y">
+              <ul className="scroll-list divide-y">
                 {birthdayRows.map((row) => (
                   <li key={row.id} className="flex items-center gap-3 p-3">
                     <PersonAvatar name={row.full_name} src={row.photo_path ? photos[row.photo_path] : null} />
@@ -417,7 +429,7 @@ async function DashboardContent() {
             {(visitors?.data ?? []).length === 0 ? (
               emptyRow("No visitors registered yet.")
             ) : (
-              <ul className="divide-y">
+              <ul className="scroll-list divide-y">
                 {(visitors?.data ?? []).map((row) => (
                   <li key={row.id} className="flex items-center justify-between gap-3 p-3">
                     <div className="min-w-0">
@@ -439,7 +451,7 @@ async function DashboardContent() {
           {(followUps.data ?? []).length === 0 ? (
             emptyRow("No pending follow-ups.")
           ) : (
-            <ul className="divide-y">
+            <ul className="scroll-list divide-y">
               {(followUps.data ?? []).map((row) => (
                 <li key={row.id} className="flex items-center justify-between gap-3 p-3">
                   <div className="min-w-0">
@@ -468,7 +480,7 @@ async function DashboardContent() {
             {(events?.data ?? []).length === 0 ? (
               emptyRow("No upcoming events.")
             ) : (
-              <ul className="divide-y">
+              <ul className="scroll-list divide-y">
                 {(events?.data ?? []).map((row) => (
                   <li key={row.id} className="flex items-center justify-between gap-3 p-3">
                     <div className="min-w-0">

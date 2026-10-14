@@ -233,7 +233,7 @@ async function GroupContent({ params }: Pick<PageProps<"/groups/[id]">, "params"
             {memberRows.length === 0 ? (
               <ListEmpty>No members in this group yet.</ListEmpty>
             ) : (
-              <ul className="divide-y">
+              <ul className="scroll-list divide-y">
                 {memberRows.map((member) => (
                   <li key={member.id} className="flex items-center justify-between gap-3 p-3">
                     <div className="min-w-0">
@@ -293,7 +293,7 @@ async function GroupContent({ params }: Pick<PageProps<"/groups/[id]">, "params"
             {(sessions.data ?? []).length === 0 ? (
               <ListEmpty>No meetings recorded for this group yet.</ListEmpty>
             ) : (
-              <ul className="divide-y">
+              <ul className="scroll-list divide-y">
                 {(sessions.data ?? []).map((session) => (
                   <li key={session.id}>
                     <Link href={`/attendance/services/${session.id}`} className="flex items-center justify-between gap-3 p-3 text-sm hover:bg-accent">
@@ -317,7 +317,7 @@ async function GroupContent({ params }: Pick<PageProps<"/groups/[id]">, "params"
             {visitorRows.length === 0 ? (
               <ListEmpty>No visitors have been recorded at this group&apos;s meetings.</ListEmpty>
             ) : (
-              <ul className="divide-y">
+              <ul className="scroll-list divide-y">
                 {visitorRows.map((visitor) => (
                   <li key={visitor.person_id} className="flex items-center justify-between gap-3 p-3 text-sm">
                     <Link href={`/people/visitors/${visitor.person_id}`} className="truncate font-medium hover:underline">
@@ -362,7 +362,7 @@ async function GroupContent({ params }: Pick<PageProps<"/groups/[id]">, "params"
             {(apprentices.data ?? []).length === 0 ? (
               <ListEmpty>No apprentices in this group yet.</ListEmpty>
             ) : (
-              <ul className="divide-y">
+              <ul className="scroll-list divide-y">
                 {(apprentices.data ?? []).map((row) => {
                   const person = row.person as { full_name: string } | null;
                   return (

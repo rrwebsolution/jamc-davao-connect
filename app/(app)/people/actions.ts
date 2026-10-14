@@ -5,6 +5,7 @@ import { P } from "@/lib/auth/permissions";
 import { getAccessWith } from "@/lib/auth/session";
 import { getChurchToday, isUuid } from "@/lib/data/common";
 import { fail, INVALID_INPUT, NOT_ALLOWED } from "@/lib/errors";
+import { createAdminClient, isAdminConfigured } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types";
 import { memberSchema, ownContactSchema, visitorSchema } from "@/lib/validation";
@@ -94,9 +95,18 @@ export async function saveVisitor(id: string | null, input: unknown): Promise<Ac
 
   const parsed = visitorSchema.safeParse(input);
   if (!parsed.success) return INVALID_INPUT;
-  const { first_visit_date, invited_by_name, attendance_type_id, prayer_request, notes, status, ...person } =
+  const { first_visit_date, invited_by_person_id, invited_by_name, attendance_type_id, prayer_request, notes, status, ...person } =
     parsed.data;
-  const profile = { first_visit_date, invited_by_name, attendance_type_id, prayer_request, notes, status };
+  // The inviter is either a member (linked to their record) or a typed name, never both.
+  const profile = {
+    first_visit_date,
+    invited_by_person_id,
+    invited_by_name: invited_by_person_id ? null : invited_by_name,
+    attendance_type_id,
+    prayer_request,
+    notes,
+    status,
+  };
 
   const supabase = await createClient();
   let personId = id;
@@ -140,12 +150,25 @@ export async function saveVisitor(id: string | null, input: unknown): Promise<Ac
 }
 
 /** Archive (soft delete) or restore a member or visitor. */
-export async function setPersonArchived(id: string, archived: boolean): Promise<ActionResult> {
+export async function setPersonArchived(id: string, archived: boolean, disableAccount = false): Promise<ActionResult> {
   if (!isUuid(id)) return INVALID_INPUT;
   const access = await getAccessWith(P.membersArchive, P.visitorsUpdate);
   if (!access) return NOT_ALLOWED;
 
   const supabase = await createClient();
+  if (archived && disableAccount) {
+    // One step in the database: the account is disabled (never deleted) and
+    // the member archived. History stays on the member record.
+    const { data: userId, error } = await supabase.rpc("archive_member_and_disable_account", { target_person_id: id });
+    if (error) return fail(error);
+    // RLS already locks the account out; banning also ends its session.
+    if (userId && isAdminConfigured) {
+      await createAdminClient().auth.admin.updateUserById(userId as string, { ban_duration: "876000h" });
+    }
+    refresh();
+    return { ok: true };
+  }
+
   const { data, error } = await supabase
     .from("people")
     .update({ archived_at: archived ? new Date().toISOString() : null })

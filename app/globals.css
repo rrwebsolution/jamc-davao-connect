@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-primary);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  --font-heading: var(--font-heading-family);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -58,7 +58,7 @@
 }
 
 /*
- * Brand variables. The root layout overrides these inline on <html> with the
+ * Brand variables. The root layout overrides them inline on <html> with the
  * colours saved in Appearance settings; the values here are the defaults.
  */
 :root {
@@ -173,6 +173,402 @@
   --chart-3: color-mix(in oklch, var(--brand-primary) 30%, oklch(0.5 0.01 50));
   --chart-4: color-mix(in oklch, var(--brand-accent) 35%, oklch(0.5 0.01 50));
   --chart-5: oklch(0.65 0.01 70);
+}
+
+/*
+ * Typography. The root layout overrides these inline on <html> with the
+ * values saved in Appearance → Typography; the values here are the defaults.
+ * Sizes are in rem, so they follow the base size (and the mobile scale).
+ */
+:root {
+  --font-primary: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-heading-family: var(--font-primary);
+  --font-size-base: 16px;
+  --mobile-font-scale: 1;
+  --heading-scale: 1;
+  --page-title-shrink: 1;
+  --font-weight-body: 400;
+  --font-weight-heading: 600;
+  --font-size-page-title: 1.5rem;
+  --font-size-section-title: 1rem;
+  --font-size-card-title: 1rem;
+  --font-size-body: 1rem;
+  --font-size-small: 0.875rem;
+  --font-size-caption: 0.75rem;
+  --font-size-button: 0.875rem;
+  --font-size-input: 0.875rem;
+  --font-size-table: 0.875rem;
+  --font-size-sidebar: 0.875rem;
+}
+
+/*
+ * The text utilities used across the app (text-xs, text-sm, text-base) read
+ * these, so every page follows the settings without naming a size itself.
+ * `.type-scope` re-derives them for a subtree: the typography live preview.
+ * Captions never go below 11px.
+ */
+:root,
+.type-scope {
+  --text-xs: max(11px, var(--font-size-caption));
+  --text-sm: var(--font-size-small);
+  --text-base: var(--font-size-body);
+}
+
+/* The base size scales everything measured in rem: text and spacing together. */
+html {
+  font-size: var(--font-size-base);
+}
+
+body,
+.type-scope {
+  font-family: var(--font-primary);
+  font-weight: var(--font-weight-body);
+  font-size: var(--font-size-body);
+}
+
+/*
+ * Headings take the heading font, weight and scale wherever they appear.
+ * These rules are deliberately outside the cascade layers so that one setting
+ * decides, not a size class left on an individual heading. A heading can opt
+ * into another role with data-type ("page-title", or "display" for the large
+ * login headline, which keeps its own size).
+ */
+h1,
+h2,
+h3,
+h4,
+[data-slot$="-title"],
+[data-type="page-title"],
+[data-type="display"] {
+  font-family: var(--font-heading-family);
+  font-weight: var(--font-weight-heading);
+}
+
+h1:not([data-type]),
+[data-type="page-title"] {
+  font-size: calc(var(--font-size-page-title) * var(--heading-scale) * var(--page-title-shrink));
+  line-height: 1.25;
+}
+
+h2:not([data-type]) {
+  font-size: calc(var(--font-size-section-title) * var(--heading-scale));
+  line-height: 1.35;
+}
+
+h3:not([data-type]),
+h4:not([data-type]),
+[data-slot$="-title"] {
+  font-size: calc(var(--font-size-card-title) * var(--heading-scale));
+  line-height: 1.35;
+}
+
+/* Toasts are rendered by a library with its own font; bring them in line. */
+html [data-sonner-toaster] {
+  font-family: var(--font-primary);
+}
+
+@media (max-width: 767px) {
+  /* Phones: the mobile scale applies on top of the base size. */
+  html {
+    font-size: calc(var(--font-size-base) * var(--mobile-font-scale));
+  }
+  :root {
+    --page-title-shrink: 0.84;
+  }
+}
+
+/*
+ * Component text sizes. In the components layer, so a size class given to one
+ * particular button or input still wins.
+ */
+@layer components {
+  .type-button {
+    font-size: var(--font-size-button);
+  }
+  .type-button-sm {
+    font-size: calc(var(--font-size-button) * 0.92);
+  }
+  .type-input {
+    font-size: var(--font-size-input);
+  }
+  .type-table {
+    font-size: var(--font-size-table);
+  }
+  .type-sidebar {
+    font-size: var(--font-size-sidebar);
+  }
+  /*
+   * A list inside a section of a page (recent attendance, group members,
+   * activity...). It stops growing at a fixed height and scrolls inside its
+   * card, so one long list does not push the rest of the page away.
+   */
+  .scroll-list {
+    max-height: min(26rem, 65dvh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  @media print {
+    .scroll-list {
+      max-height: none;
+      overflow: visible;
+    }
+  }
+  @media (max-width: 767px) {
+    .type-button-sm {
+      font-size: var(--font-size-button);
+    }
+    /* Below 16px, phones zoom the page when a field is focused. */
+    .type-input {
+      font-size: max(16px, var(--font-size-input));
+    }
+  }
+}
+
+/*
+ * System background image (Appearance → Background). A dedicated layer fixed
+ * behind the whole application: the content scrolls over it and it never
+ * moves. It is sized to the large viewport so it does not jump when a phone's
+ * address bar slides away. Only this layer is blurred or dimmed, once, never
+ * the content and never during scrolling.
+ */
+.system-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100lvh;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* The settings preview draws it inside a box instead. */
+.system-background-contained {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  z-index: 0;
+}
+
+.system-background-image {
+  position: absolute;
+  inset: calc(var(--sysbg-bleed, 0px) * -1);
+  background-repeat: no-repeat;
+  background-size: var(--sysbg-size, cover);
+  background-position: var(--sysbg-position, center);
+  filter: var(--sysbg-filter, none);
+}
+
+/* The overlay keeps text and cards readable: one colour for light mode, one for dark. */
+.system-background-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: var(--sysbg-overlay-light, transparent);
+}
+
+.dark .system-background-overlay {
+  background-color: var(--sysbg-overlay-dark, transparent);
+}
+
+/* The surfaces as they are without a background picture. */
+:root,
+.theme-scope {
+  --card-solid: var(--brand-card);
+  --sidebar-solid: var(--brand-sidebar);
+  --navbar-solid: var(--brand-navbar);
+}
+
+.dark {
+  --card-solid: oklch(0.215 0.01 50);
+  --sidebar-solid: color-mix(in oklch, var(--brand-sidebar) 45%, oklch(0.14 0.008 50));
+  --navbar-solid: oklch(0.2 0.009 50);
+}
+
+/* With a picture behind them, the sidebar and navbar can let a little of it through. */
+[data-system-bg="on"] {
+  --sidebar: color-mix(in oklch, var(--sidebar-solid) var(--sysbg-sidebar-alpha, 100%), transparent);
+  --navbar: color-mix(in oklch, var(--navbar-solid) var(--sysbg-navbar-alpha, 100%), transparent);
+}
+
+/* "Slightly transparent" cards: subtle, so text stays easy to read. Dialogs and menus stay solid. */
+[data-system-bg="on"][data-card-style="translucent"] {
+  --card: color-mix(in oklch, var(--card-solid) 90%, transparent);
+}
+
+@media print {
+  .system-background {
+    display: none;
+  }
+}
+
+/*
+ * Motion. One set of tokens for every animation in the system; the level
+ * comes from Appearance → Motion & animation as <html data-motion>. (The
+ * settings preview sets data-motion on its own box to show another level.)
+ * Only opacity, translate and scale are animated: never size or position.
+ */
+:root,
+[data-motion="subtle"] {
+  --motion-duration-fast: 140ms;
+  --motion-duration-normal: 220ms;
+  --motion-duration-slow: 360ms;
+  --motion-distance-small: 6px;
+  --motion-distance-normal: 12px;
+  --motion-stagger: 45ms;
+  --motion-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+[data-motion="normal"] {
+  --motion-duration-fast: 180ms;
+  --motion-duration-normal: 300ms;
+  --motion-duration-slow: 480ms;
+  --motion-distance-small: 8px;
+  --motion-distance-normal: 20px;
+  --motion-stagger: 60ms;
+}
+
+/* Only a starting point: the end is whatever the element normally looks like. */
+@keyframes motion-rise {
+  from {
+    opacity: 0;
+    translate: 0 var(--motion-distance-normal);
+  }
+}
+
+@keyframes motion-fade {
+  from {
+    opacity: 0;
+    translate: 0 var(--motion-distance-small);
+  }
+}
+
+
+@layer components {
+  /*
+   * Entrance: page sections, tables, list cards and anything in <ScrollReveal>
+   * fade in with a small rise when they appear. What is below the screen gets
+   * the same treatment when it is scrolled to (the script in lib/motion.ts).
+   * A page that is being shown again from memory appears at once instead.
+   */
+  :is([data-reveal], [data-reveal-list] > *, [data-slot="table-container"], [data-page] section):not([data-reveal-instant] *) {
+    animation: motion-rise var(--motion-duration-slow) var(--motion-ease) backwards;
+    animation-delay: var(--reveal-delay, 0ms);
+  }
+  /* The first few cards of a list arrive one after another; the rest together. */
+  [data-reveal-list] > :nth-child(2) {
+    --reveal-delay: calc(var(--motion-stagger) * 1);
+  }
+  [data-reveal-list] > :nth-child(3) {
+    --reveal-delay: calc(var(--motion-stagger) * 2);
+  }
+  [data-reveal-list] > :nth-child(4) {
+    --reveal-delay: calc(var(--motion-stagger) * 3);
+  }
+  [data-reveal-list] > :nth-child(5) {
+    --reveal-delay: calc(var(--motion-stagger) * 4);
+  }
+  [data-reveal-list] > :nth-child(n + 6) {
+    --reveal-delay: calc(var(--motion-stagger) * 5);
+  }
+
+  /* The sample in Appearance → Motion always plays, with the level being edited. */
+  .motion-preview :is([data-reveal], [data-reveal-list] > *) {
+    animation: motion-rise var(--motion-duration-slow) var(--motion-ease) backwards;
+    animation-delay: var(--reveal-delay, 0ms);
+  }
+
+  /* The changing part of a page: the skeleton, or a remembered page coming back. */
+  .page-enter {
+    animation: motion-fade var(--motion-duration-normal) var(--motion-ease) backwards;
+  }
+
+  /* Buttons: a small press. */
+  .motion-press {
+    transition-duration: var(--motion-duration-fast);
+    transition-timing-function: var(--motion-ease);
+  }
+  .motion-press:active:not(:disabled) {
+    scale: 0.98;
+  }
+
+  /* Cards that lead somewhere: a slight lift on hover, a press on touch. */
+  .motion-card {
+    transition:
+      translate var(--motion-duration-normal) var(--motion-ease),
+      scale var(--motion-duration-fast) var(--motion-ease),
+      box-shadow var(--motion-duration-normal) var(--motion-ease),
+      border-color var(--motion-duration-normal) var(--motion-ease);
+  }
+  @media (hover: hover) {
+    .motion-card:hover {
+      translate: 0 -2px;
+      box-shadow: 0 10px 24px -14px rgb(0 0 0 / 0.35);
+    }
+  }
+  .motion-card:active {
+    scale: 0.985;
+  }
+
+
+  /* A validation message slides in under its field. */
+  .motion-message {
+    animation: motion-fade var(--motion-duration-normal) var(--motion-ease) backwards;
+  }
+}
+
+/* Dialogs, sheets, menus and their backdrops keep their own motion, at the system's pace. */
+[data-slot$="-content"],
+[data-slot$="-popup"],
+[data-slot$="-overlay"],
+[data-slot$="-backdrop"] {
+  animation-duration: var(--motion-duration-normal);
+  transition-duration: var(--motion-duration-normal);
+}
+
+/* Appearance live previews change smoothly instead of snapping. */
+.theme-scope,
+.theme-scope * {
+  transition:
+    background-color var(--motion-duration-normal) var(--motion-ease),
+    color var(--motion-duration-normal) var(--motion-ease),
+    border-color var(--motion-duration-normal) var(--motion-ease),
+    font-size var(--motion-duration-normal) var(--motion-ease);
+}
+
+/*
+ * Animations off (the setting), or the device asks for reduced motion:
+ * everything jumps straight to its end state. Spinners and the navigation
+ * progress bar stay, because they say that something is happening.
+ */
+[data-motion="off"] *:not(.animate-spin, .navigation-progress-bar, [data-motion]:not([data-motion="off"]) *),
+[data-motion="off"] *:not([data-motion]:not([data-motion="off"]) *)::before,
+[data-motion="off"] *:not([data-motion]:not([data-motion="off"]) *)::after {
+  animation-duration: 0.01ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root *:not(.animate-spin, .navigation-progress-bar),
+  :root *::before,
+  :root *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  * {
+    animation: none !important;
+  }
 }
 
 /*

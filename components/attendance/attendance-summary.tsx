@@ -81,7 +81,7 @@ export async function AttendanceSummary({
 
       <section className="rounded-xl border bg-card">
         <h2 className="border-b p-4 text-base font-semibold">Recent history</h2>
-        <ul className="divide-y">
+        <ul className="scroll-list divide-y">
           {rows.map((row) => (
             <li key={row.id} className="flex items-center justify-between gap-3 p-3 text-sm">
               <div className="min-w-0">

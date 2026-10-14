@@ -126,7 +126,7 @@ async function EventContent({ params }: Pick<PageProps<"/events/[id]">, "params"
           {rows.length === 0 ? (
             <ListEmpty>No attendance recorded for this event yet.</ListEmpty>
           ) : (
-            <ul className="divide-y">
+            <ul className="scroll-list divide-y">
               {rows.map((row) => (
                 <li key={row.id} className="flex items-center justify-between gap-3 p-3 text-sm">
                   <Link href={`/people/${row.person_type === "visitor" ? "visitors" : "members"}/${row.person_id}`} className="truncate font-medium hover:underline">

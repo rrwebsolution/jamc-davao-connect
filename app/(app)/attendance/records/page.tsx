@@ -11,7 +11,7 @@ import { EmptyState, LoadError, NoAccess, PageHeader, PageSkeleton } from "@/com
 import { can, P } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
 import { listRecords } from "@/lib/data/attendance";
-import { getChurchSettings, getLookup, PAGE_SIZE, parseListParams } from "@/lib/data/common";
+import { getChurchSettings, getLookup, getListParams } from "@/lib/data/common";
 import { formatDate } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Attendance Records" };
@@ -22,7 +22,7 @@ async function RecordsContent({ searchParams }: Pick<PageProps<"/attendance/reco
     return <NoAccess />;
   }
 
-  const { params, page, from } = parseListParams(await searchParams);
+  const { params, page, from, pageSize } = await getListParams(await searchParams);
   const [list, types, statuses, settings] = await Promise.all([
     listRecords(params, from),
     getLookup("attendance_types"),
@@ -65,7 +65,7 @@ async function RecordsContent({ searchParams }: Pick<PageProps<"/attendance/reco
         />
       ) : (
         <>
-          <ul className="space-y-2 md:hidden">
+          <ul data-reveal-list="" className="space-y-2 md:hidden">
             {list.rows.map((row) => (
               <li key={row.id} className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3">
                 <div className="min-w-0">
@@ -116,7 +116,7 @@ async function RecordsContent({ searchParams }: Pick<PageProps<"/attendance/reco
               </TableBody>
             </Table>
           </div>
-          <Pagination params={params} page={page} pageSize={PAGE_SIZE} total={list.total} />
+          <Pagination params={params} page={page} pageSize={pageSize} total={list.total} />
         </>
       )}
     </>

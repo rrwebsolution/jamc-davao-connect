@@ -57,6 +57,7 @@ export function EntityDialog({
   successMessage = "Saved",
   redirectOnCreate,
   defaultOpen = false,
+  header,
   children,
   ...buttonProps
 }: {
@@ -71,6 +72,8 @@ export function EntityDialog({
   redirectOnCreate?: string;
   /** Start open (used by the command palette's quick actions via ?new=1). */
   defaultOpen?: boolean;
+  /** Read-only content shown above the fields. */
+  header?: ReactNode;
   children: ReactNode;
 } & Omit<ComponentProps<typeof Button>, "onClick" | "children">) {
   const router = useRouter();
@@ -110,8 +113,8 @@ export function EntityDialog({
 
   function close() {
     setOpen(false);
-    // Drop ?new=1 so a refresh doesn't reopen the dialog.
-    if (defaultOpen && window.location.search.includes("new=1")) {
+    // Drop ?new=1 / ?account=new so a refresh doesn't reopen the dialog.
+    if (defaultOpen && /[?&](new=1|account=new)/.test(window.location.search)) {
       window.history.replaceState(null, "", pathname);
     }
   }
@@ -185,6 +188,7 @@ export function EntityDialog({
             {description ? <DialogDescription>{description}</DialogDescription> : null}
           </DialogHeader>
           <form onSubmit={submit} noValidate>
+            {header}
             <div className="grid gap-4 sm:grid-cols-2">
               {visible.map((field) => {
                 const id = `field-${field.name}`;

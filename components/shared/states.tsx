@@ -36,7 +36,7 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card px-6 py-12 text-center">
+    <div data-reveal="" className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card px-6 py-12 text-center">
       <div className="mb-3 flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <Icon className="size-5" aria-hidden />
       </div>

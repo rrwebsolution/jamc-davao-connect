@@ -12,7 +12,7 @@ import { DateFilter, FilterSelect, Pagination } from "@/components/shared/list-c
 import { EmptyState, LoadError, NoAccess, PageHeader, PageSkeleton } from "@/components/shared/states";
 import { can } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
-import { getChurchSettings, getChurchToday, isUuid, PAGE_SIZE, parseListParams } from "@/lib/data/common";
+import { getChurchSettings, getChurchToday, isUuid, getListParams } from "@/lib/data/common";
 import { getFinancialAccounts } from "@/lib/data/finance";
 import { describeError } from "@/lib/errors";
 import { formatDate } from "@/lib/format";
@@ -41,7 +41,7 @@ async function TransfersContent({ searchParams }: Pick<PageProps<"/finance/trans
     return <NoAccess />;
   }
   const canManage = can(access, "finance.manage");
-  const { params, page, from } = parseListParams(await searchParams);
+  const { params, page, from, pageSize } = await getListParams(await searchParams);
 
   const supabase = await createClient();
   let query = supabase.from("account_transfer_details").select("*", { count: "exact" });
@@ -50,7 +50,7 @@ async function TransfersContent({ searchParams }: Pick<PageProps<"/finance/trans
   if (params.to) query = query.lte("transfer_date", params.to);
 
   const [list, accounts, settings, today] = await Promise.all([
-    query.order("transfer_date", { ascending: false }).order("created_at", { ascending: false }).range(from, from + PAGE_SIZE - 1),
+    query.order("transfer_date", { ascending: false }).order("created_at", { ascending: false }).range(from, from + pageSize - 1),
     getFinancialAccounts(),
     getChurchSettings(),
     getChurchToday(),
@@ -196,7 +196,7 @@ async function TransfersContent({ searchParams }: Pick<PageProps<"/finance/trans
               </li>
             ))}
           </ul>
-          <Pagination params={params} page={page} pageSize={PAGE_SIZE} total={list.count ?? 0} />
+          <Pagination params={params} page={page} pageSize={pageSize} total={list.count ?? 0} />
         </>
       )}
     </>

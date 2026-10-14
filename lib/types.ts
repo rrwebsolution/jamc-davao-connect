@@ -96,6 +96,8 @@ export type ChurchSettings = {
   member_id_padding: number;
   absence_threshold: number;
   track_individual_giving: boolean;
+  /** Rows per page in every paginated list. */
+  rows_per_page: number;
 };
 
 export type AttendanceSession = {

@@ -30,7 +30,7 @@ export function Field({
       </Label>
       {children}
       {error ? (
-        <p className="text-xs text-destructive" role="alert">
+        <p className="motion-message text-xs text-destructive" role="alert">
           {error}
         </p>
       ) : hint ? (

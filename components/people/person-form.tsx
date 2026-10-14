@@ -8,9 +8,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch, type FieldValues, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 import { ImagePlus, Trash2 } from "lucide-react";
+import { createMemberAccount } from "@/app/(app)/admin/actions";
 import { saveMember, saveVisitor } from "@/app/(app)/people/actions";
 import { buttonVariants } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,6 +31,7 @@ export type PersonFormOptions = {
   ministries: Lookup[];
   attendanceTypes: Lookup[];
   cellGroups: Option[];
+  /** Current members: mentor choices for a member, "invited by" choices for a visitor. */
   mentors: Option[];
 };
 
@@ -53,7 +56,9 @@ function defaults(mode: "member" | "visitor", person: Person | null, options: Pe
     return {
       ...base,
       first_visit_date: person?.first_visit_date ?? today,
-      invited_by_name: person?.invited_by ?? "",
+      // A member chosen from the list, or "other" for a name typed in by hand.
+      invited_by_person_id: person?.invited_by_person_id ?? (person?.invited_by ? "other" : ""),
+      invited_by_name: person?.invited_by_person_id ? "" : (person?.invited_by ?? ""),
       attendance_type_id: person?.visit_attendance_type_id ?? "",
       prayer_request: person?.prayer_request ?? "",
       notes: person?.visitor_notes ?? "",
@@ -82,12 +87,15 @@ export function PersonForm({
   photoUrl,
   options,
   today,
+  accountRoles = null,
 }: {
   mode: "member" | "visitor";
   person: Person | null;
   photoUrl: string | null;
   options: PersonFormOptions;
   today: string;
+  /** Roles the signed-in admin may assign. Null hides "System access" (editing, visitors, or no permission). */
+  accountRoles?: { id: string; key: string; name: string }[] | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -95,12 +103,22 @@ export function PersonForm({
   const [preview, setPreview] = useState<string | null>(photoUrl);
   const listHref = mode === "member" ? "/people/members" : "/people/visitors";
 
+  // "Create a user account for this member". Off by default: most members never sign in.
+  const [withAccount, setWithAccount] = useState(false);
+  const [account, setAccount] = useState({
+    email: "",
+    role_id: accountRoles?.find((role) => role.key === "member")?.id ?? accountRoles?.[0]?.id ?? "",
+    method: "invite",
+    password: "",
+  });
+  const [accountError, setAccountError] = useState<string | null>(null);
+
   const form = useForm<FieldValues>({
     resolver: (mode === "member" ? zodResolver(memberSchema) : zodResolver(visitorSchema)) as unknown as Resolver<FieldValues>,
     defaultValues: defaults(mode, person, options, today),
   });
   const { register, formState, setValue, control } = form;
-  const [firstName, lastName, isActive] = useWatch({ control, name: ["first_name", "last_name", "is_active"] });
+  const [firstName, lastName, isActive, invitedBy] = useWatch({ control, name: ["first_name", "last_name", "is_active", "invited_by_person_id"] });
   const error = (name: string) => formState.errors[name]?.message as string | undefined;
 
   // Object URL of a newly chosen photo, released when replaced and on unmount.
@@ -143,6 +161,21 @@ export function PersonForm({
     void event;
     const values = form.getValues();
 
+    // Check the account details before saving anything.
+    const wantsAccount = Boolean(accountRoles) && withAccount;
+    const login = { ...account, email: (account.email || String(values.email ?? "")).trim() };
+    if (wantsAccount) {
+      const problem = !/^\S+@\S+\.\S+$/.test(login.email)
+        ? "Enter a login email, or fill in the member's email above."
+        : !login.role_id
+          ? "Choose a role for the account."
+          : login.method === "password" && login.password.length < 8
+            ? "The temporary password needs at least 8 characters."
+            : null;
+      setAccountError(problem);
+      if (problem) return;
+    }
+
     startTransition(async () => {
       let photoPath: string = values.photo_path ?? "";
       if (photoFile) {
@@ -166,7 +199,23 @@ export function PersonForm({
         toast.error(result.error);
         return;
       }
-      toast.success(person ? "Changes saved" : mode === "member" ? "Member added" : "Visitor registered");
+      if (wantsAccount) {
+        // The member is saved. If the account fails it can be retried from the
+        // profile, which creates only the account, never a second member.
+        const created = await createMemberAccount(result.data!.id, login);
+        if (!created.ok) {
+          toast.warning("Member was created successfully, but the user account could not be created.", {
+            description: `${created.error} You can retry from Account access.`,
+            duration: 12000,
+          });
+          startNavigationProgress();
+          router.push(`${listHref}/${result.data!.id}?account=new`);
+          return;
+        }
+        toast.success(login.method === "invite" ? "Member added and invitation sent" : "Member added with a user account");
+      } else {
+        toast.success(person ? "Changes saved" : mode === "member" ? "Member added" : "Visitor registered");
+      }
       startNavigationProgress();
       router.push(`${listHref}/${result.data!.id}`);
     });
@@ -347,9 +396,24 @@ export function PersonForm({
                 ))}
               </NativeSelect>
             </Field>
-            <Field label="Invited by" htmlFor="invited_by_name" error={error("invited_by_name")}>
-              <Input id="invited_by_name" {...register("invited_by_name")} />
+            <Field label="Invited by" htmlFor="invited_by_person_id" error={error("invited_by_person_id")}>
+              <NativeSelect id="invited_by_person_id" {...register("invited_by_person_id")}>
+                <option value="">No one / not known</option>
+                {options.mentors
+                  .filter((member) => member.id !== person?.id)
+                  .map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name}
+                    </option>
+                  ))}
+                <option value="other">Someone else (not a member)</option>
+              </NativeSelect>
             </Field>
+            {invitedBy === "other" ? (
+              <Field label="Inviter's name" htmlFor="invited_by_name" error={error("invited_by_name")}>
+                <Input id="invited_by_name" {...register("invited_by_name")} />
+              </Field>
+            ) : null}
             <Field label="Status" htmlFor="status" error={error("status")}>
               <NativeSelect id="status" {...register("status")}>
                 {VISITOR_STATUSES.filter(
@@ -370,6 +434,72 @@ export function PersonForm({
           </div>
         </FormSection>
       )}
+
+      {accountRoles ? (
+        <FormSection title="System access" description="Optional. A member can be in the church records without being able to sign in.">
+          <label className="flex items-start gap-3 text-sm font-medium">
+            <Checkbox checked={withAccount} onCheckedChange={(checked) => setWithAccount(Boolean(checked))} className="mt-0.5" />
+            <span>
+              Create a user account for this member
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                The account is approved straight away and linked to this member record.
+              </span>
+            </span>
+          </label>
+          {withAccount ? (
+            <div className="mt-4 grid gap-4 border-t pt-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Field label="Login email" htmlFor="account_email" hint="Leave empty to use the member's email above.">
+                <Input
+                  id="account_email"
+                  type="email"
+                  autoComplete="off"
+                  value={account.email}
+                  onChange={(event) => setAccount((current) => ({ ...current, email: event.target.value }))}
+                />
+              </Field>
+              <Field label="Role" htmlFor="account_role" required>
+                <NativeSelect
+                  id="account_role"
+                  value={account.role_id}
+                  onChange={(event) => setAccount((current) => ({ ...current, role_id: event.target.value }))}
+                >
+                  {accountRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </Field>
+              <Field label="How they get their password" htmlFor="account_method">
+                <NativeSelect
+                  id="account_method"
+                  value={account.method}
+                  onChange={(event) => setAccount((current) => ({ ...current, method: event.target.value }))}
+                >
+                  <option value="invite">Send an invitation email</option>
+                  <option value="password">I set a temporary password</option>
+                </NativeSelect>
+              </Field>
+              {account.method === "password" ? (
+                <Field label="Temporary password" htmlFor="account_password" required hint="At least 8 characters.">
+                  <Input
+                    id="account_password"
+                    type="text"
+                    autoComplete="off"
+                    value={account.password}
+                    onChange={(event) => setAccount((current) => ({ ...current, password: event.target.value }))}
+                  />
+                </Field>
+              ) : null}
+              {accountError ? (
+                <p role="alert" className="text-sm text-destructive sm:col-span-2 lg:col-span-3">
+                  {accountError}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </FormSection>
+      ) : null}
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Link

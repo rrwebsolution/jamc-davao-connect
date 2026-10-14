@@ -12,7 +12,7 @@ import { FilterSelect, Pagination, SearchInput } from "@/components/shared/list-
 import { EmptyState, LoadError, PageHeader, PageSkeleton } from "@/components/shared/states";
 import { can } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
-import { cleanSearchTerm, getChurchSettings, getChurchToday, isUuid, PAGE_SIZE, parseListParams } from "@/lib/data/common";
+import { cleanSearchTerm, getChurchSettings, getChurchToday, isUuid, getListParams } from "@/lib/data/common";
 import { FOLLOW_UP_STATUSES, FOLLOW_UP_TYPES, getPeopleOptions, getUserOptions, PRIORITIES } from "@/lib/data/options";
 import { createClient } from "@/lib/supabase/server";
 import { describeError } from "@/lib/errors";
@@ -21,7 +21,7 @@ export const metadata: Metadata = { title: "Follow-ups" };
 
 async function FollowUpsContent({ searchParams }: Pick<PageProps<"/care/follow-ups">, "searchParams">) {
   const access = await requireAccess();
-  const { params, page, from } = parseListParams(await searchParams);
+  const { params, page, from, pageSize } = await getListParams(await searchParams);
   const canCreate = can(access, "care.manage", "care.manage_assigned");
 
   // No page gate: anyone may have a follow-up assigned to them. RLS returns
@@ -53,7 +53,7 @@ async function FollowUpsContent({ searchParams }: Pick<PageProps<"/care/follow-u
 
   const openStates = ["pending", "in_progress"];
   const [list, overdue, dueToday, upcoming] = await Promise.all([
-    query.order("due_date", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }).range(from, from + PAGE_SIZE - 1),
+    query.order("due_date", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }).range(from, from + pageSize - 1),
     supabase.from("follow_ups").select("id", { count: "exact", head: true }).in("status", openStates).lt("due_date", today),
     supabase.from("follow_ups").select("id", { count: "exact", head: true }).in("status", openStates).eq("due_date", today),
     supabase.from("follow_ups").select("id", { count: "exact", head: true }).in("status", openStates).gt("due_date", today),
@@ -154,7 +154,7 @@ async function FollowUpsContent({ searchParams }: Pick<PageProps<"/care/follow-u
               </Link>
             </p>
           ) : (
-            <Pagination params={params} page={page} pageSize={PAGE_SIZE} total={list.count ?? 0} />
+            <Pagination params={params} page={page} pageSize={pageSize} total={list.count ?? 0} />
           )}
         </>
       )}

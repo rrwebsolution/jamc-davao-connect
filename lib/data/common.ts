@@ -4,7 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import type { ChurchSettings, Lookup } from "@/lib/types";
 import { describeError } from "@/lib/errors";
 
-export const PAGE_SIZE = 20;
+/** The sizes offered in Settings → General. The database accepts only these. */
+export const PAGE_SIZES = [10, 20, 25, 50, 100] as const;
+const DEFAULT_PAGE_SIZE = 20;
 
 export const DEFAULT_SETTINGS: ChurchSettings = {
   church_name: "JAMC-Davao",
@@ -17,6 +19,7 @@ export const DEFAULT_SETTINGS: ChurchSettings = {
   member_id_padding: 5,
   absence_threshold: 2,
   track_individual_giving: false,
+  rows_per_page: DEFAULT_PAGE_SIZE,
 };
 
 export const getChurchSettings = cache(async (): Promise<ChurchSettings> => {
@@ -85,7 +88,20 @@ export async function signPhotoUrls(paths: (string | null | undefined)[]): Promi
 
 export type RawSearchParams = Record<string, string | string[] | undefined>;
 
-/** Flattens Next's searchParams and reads the paging values. */
+/** Rows shown per page in every paginated list: the system-wide setting. */
+export async function getPageSize(): Promise<number> {
+  const { rows_per_page } = await getChurchSettings();
+  return (PAGE_SIZES as readonly number[]).includes(rows_per_page) ? rows_per_page : DEFAULT_PAGE_SIZE;
+}
+
+/** The list parameters plus where the requested page starts, using the configured page size. */
+export async function getListParams(raw: RawSearchParams) {
+  const { params, page } = parseListParams(raw);
+  const pageSize = await getPageSize();
+  return { params, page, pageSize, from: (page - 1) * pageSize };
+}
+
+/** Flattens Next's searchParams and reads the page number. */
 export function parseListParams(raw: RawSearchParams) {
   const params: Record<string, string | undefined> = {};
   for (const [key, value] of Object.entries(raw)) {
@@ -95,7 +111,7 @@ export function parseListParams(raw: RawSearchParams) {
     }
   }
   const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
-  return { params, page, from: (page - 1) * PAGE_SIZE, to: page * PAGE_SIZE - 1 };
+  return { params, page };
 }
 
 /** Removes characters that have meaning in a PostgREST filter expression. */

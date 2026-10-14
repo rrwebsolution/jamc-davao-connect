@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured, supabaseKey, supabaseUrl } from "@/lib/env";
 
-const PUBLIC_PATHS = ["/login", "/forgot-password", "/reset-password", "/auth", "/manifest.webmanifest", "/pwa-icon"];
+const PUBLIC_PATHS = ["/login", "/sign-up", "/pending-approval", "/forgot-password", "/reset-password", "/auth", "/manifest.webmanifest", "/pwa-icon"];
 
 /**
  * Refreshes the Supabase session cookie and does an optimistic redirect for

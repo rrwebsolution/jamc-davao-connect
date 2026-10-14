@@ -6,6 +6,7 @@ import { convertVisitor, setPersonArchived } from "@/app/(app)/people/actions";
 import { buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AttendanceSummary } from "@/components/attendance/attendance-summary";
+import { AccountAccess, getMemberAccount } from "@/components/people/account-access";
 import { FollowUpList } from "@/components/care/follow-up-list";
 import { PersonForm } from "@/components/people/person-form";
 import { VisitorStatusPill } from "@/components/people/visitor-status";
@@ -17,6 +18,7 @@ import { requireAccess } from "@/lib/auth/session";
 import { getChurchSettings, getChurchToday, getLookup, signPhotoUrls } from "@/lib/data/common";
 import { getCellGroupOptions, getMemberOptions, getPerson } from "@/lib/data/people";
 import { ageFrom, formatDate, formatDateTime, titleCase } from "@/lib/format";
+import { isAdminConfigured } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { PersonType } from "@/lib/types";
 
@@ -44,10 +46,18 @@ export async function PersonFormPage({ mode, id }: { mode: PersonType; id?: stri
       getLookup("ministries"),
       getLookup("attendance_types"),
       mode === "member" ? getCellGroupOptions() : [],
-      mode === "member" ? getMemberOptions() : [],
+      getMemberOptions(),
       getChurchToday(),
       signPhotoUrls([person?.photo_path]),
     ]);
+
+  // "Create a user account for this member": only offered to people who manage users.
+  let accountRoles: { id: string; key: string; name: string }[] | null = null;
+  if (mode === "member" && !person && isAdminConfigured && can(access, P.usersManage)) {
+    const supabase = await createClient();
+    const { data } = await supabase.rpc("assignable_roles");
+    accountRoles = (data ?? []) as { id: string; key: string; name: string }[];
+  }
 
   const noun = mode === "member" ? "member" : "visitor";
   return (
@@ -62,6 +72,7 @@ export async function PersonFormPage({ mode, id }: { mode: PersonType; id?: stri
         photoUrl={person?.photo_path ? (photos[person.photo_path] ?? null) : null}
         options={{ membershipStatuses, baptismStatuses, stages, ministries, attendanceTypes, cellGroups, mentors }}
         today={today}
+        accountRoles={accountRoles}
       />
     </>
   );
@@ -86,7 +97,16 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /** The profile screen for a member or visitor. */
-export async function PersonProfilePage({ mode, id }: { mode: PersonType; id: string }) {
+export async function PersonProfilePage({
+  mode,
+  id,
+  openAccountDialog = false,
+}: {
+  mode: PersonType;
+  id: string;
+  /** Open "Create User Account" at once: the member was saved but the account was not. */
+  openAccountDialog?: boolean;
+}) {
   const access = await requireAccess();
   const person = await getPerson(id, mode);
   if (!person) {
@@ -94,15 +114,19 @@ export async function PersonProfilePage({ mode, id }: { mode: PersonType; id: st
     notFound();
   }
 
-  const [settings, today, photos] = await Promise.all([
+  const isMember = mode === "member";
+  const managesUsers = isMember && can(access, P.usersManage);
+  const [settings, today, photos, account] = await Promise.all([
     getChurchSettings(),
     getChurchToday(),
     signPhotoUrls([person.photo_path]),
+    managesUsers && person.user_id ? getMemberAccount(person.id) : null,
   ]);
+  // Archiving must not leave a working login behind.
+  const hasActiveAccount = Boolean(account?.is_active);
   const date = (value: string | null) => formatDate(value, settings.date_format);
   const age = ageFrom(person.birthdate, today);
 
-  const isMember = mode === "member";
   const canEdit = can(access, isMember ? P.membersUpdate : P.visitorsUpdate);
   const canArchive = isMember ? canEdit && can(access, P.membersArchive) : canEdit;
   const canConvert = !isMember && canEdit && can(access, P.membersCreate);
@@ -148,7 +172,15 @@ export async function PersonProfilePage({ mode, id }: { mode: PersonType; id: st
       <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Detail label="First visit date">{date(person.first_visit_date)}</Detail>
         <Detail label="Service attended">{person.service_attended}</Detail>
-        <Detail label="Invited by">{person.invited_by}</Detail>
+        <Detail label="Invited by">
+          {person.invited_by_person_id && person.invited_by ? (
+            <Link href={`/people/members/${person.invited_by_person_id}`} className="text-link hover:underline">
+              {person.invited_by}
+            </Link>
+          ) : (
+            person.invited_by
+          )}
+        </Detail>
         <Detail label="Follow-up status">
           <VisitorStatusPill status={person.visitor_status} />
         </Detail>
@@ -232,14 +264,22 @@ export async function PersonProfilePage({ mode, id }: { mode: PersonType; id: st
           ) : null}
           {canArchive ? (
             <ConfirmButton
-              action={setPersonArchived.bind(null, person.id, !person.archived_at)}
-              title={person.archived_at ? "Restore this record?" : "Archive this record?"}
+              action={setPersonArchived.bind(null, person.id, !person.archived_at, hasActiveAccount)}
+              title={
+                person.archived_at
+                  ? "Restore this record?"
+                  : hasActiveAccount
+                    ? "This member has an active system account."
+                    : "Archive this record?"
+              }
               description={
                 person.archived_at
-                  ? `${person.full_name} will appear in lists again.`
-                  : `${person.full_name} will be hidden from lists and counts. Their history is kept and they can be restored at any time.`
+                  ? `${person.full_name} will appear in lists again.${account ? " Their account stays disabled until you reactivate it." : ""}`
+                  : hasActiveAccount
+                    ? `Archiving ${person.full_name} also disables their account, so they can no longer sign in. Nothing is deleted: attendance, discipleship, ministry and other history are kept, and both can be restored later.`
+                    : `${person.full_name} will be hidden from lists and counts. Their history is kept and they can be restored at any time.`
               }
-              confirmLabel={person.archived_at ? "Restore" : "Archive"}
+              confirmLabel={person.archived_at ? "Restore" : hasActiveAccount ? "Archive Member and Disable Account" : "Archive"}
               successMessage={person.archived_at ? "Record restored" : "Record archived"}
               destructive={!person.archived_at}
               variant="outline"
@@ -266,6 +306,15 @@ export async function PersonProfilePage({ mode, id }: { mode: PersonType; id: st
         <TabsContent value="overview" className="space-y-4">
           {personal}
           {isMember ? church : null}
+          {managesUsers ? (
+            <AccountAccess
+              person={person}
+              account={account}
+              currentUserId={access.userId}
+              timezone={settings.timezone}
+              autoOpen={openAccountDialog}
+            />
+          ) : null}
           {visit}
         </TabsContent>
 
@@ -332,7 +381,7 @@ export async function PersonProfilePage({ mode, id }: { mode: PersonType; id: st
             {logs.length === 0 ? (
               <EmptyState title="No activity recorded for this record yet." />
             ) : (
-              <ul className="divide-y rounded-xl border bg-card">
+              <ul className="scroll-list divide-y rounded-xl border bg-card">
                 {logs.map((log) => (
                   <li key={log.id} className="flex flex-col gap-0.5 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                     <span>{log.description}</span>

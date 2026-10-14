@@ -9,7 +9,7 @@ import { PersonAvatar, StatusPill } from "@/components/shared/person-avatar";
 import { EmptyState, LoadError, NoAccess, PageHeader, PageSkeleton } from "@/components/shared/states";
 import { can, P } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
-import { cleanSearchTerm, getLookup, isUuid, PAGE_SIZE, parseListParams, signPhotoUrls } from "@/lib/data/common";
+import { cleanSearchTerm, getLookup, isUuid, getListParams, signPhotoUrls } from "@/lib/data/common";
 import { createClient } from "@/lib/supabase/server";
 import type { Person } from "@/lib/types";
 import { describeError } from "@/lib/errors";
@@ -21,7 +21,7 @@ async function DiscipleshipContent({ searchParams }: Pick<PageProps<"/disciplesh
   if (!can(access, P.discipleshipView, "discipleship.view_assigned")) {
     return <NoAccess />;
   }
-  const { params, page, from } = parseListParams(await searchParams);
+  const { params, page, from, pageSize } = await getListParams(await searchParams);
   const supabase = await createClient();
 
   let query = supabase
@@ -37,7 +37,7 @@ async function DiscipleshipContent({ searchParams }: Pick<PageProps<"/disciplesh
   if (term) query = query.or(`full_name.ilike.%${term}%,mentor_name.ilike.%${term}%`);
 
   const [list, stages, everyone] = await Promise.all([
-    query.order("full_name").range(from, from + PAGE_SIZE - 1),
+    query.order("full_name").range(from, from + pageSize - 1),
     getLookup("discipleship_stages"),
     supabase
       .from("people")
@@ -165,7 +165,7 @@ async function DiscipleshipContent({ searchParams }: Pick<PageProps<"/disciplesh
               </li>
             ))}
           </ul>
-          <Pagination params={params} page={page} pageSize={PAGE_SIZE} total={list.count ?? 0} />
+          <Pagination params={params} page={page} pageSize={pageSize} total={list.count ?? 0} />
         </>
       )}
     </>

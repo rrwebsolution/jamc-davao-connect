@@ -10,7 +10,7 @@ import { EmptyState, LoadError, NoAccess, PageHeader, PageSkeleton } from "@/com
 import { can, P } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
 import { listSessions } from "@/lib/data/attendance";
-import { getChurchSettings, getChurchToday, getLookup, PAGE_SIZE, parseListParams } from "@/lib/data/common";
+import { getChurchSettings, getChurchToday, getLookup, getListParams } from "@/lib/data/common";
 import { getCellGroupOptions } from "@/lib/data/people";
 import { formatDate } from "@/lib/format";
 
@@ -22,7 +22,7 @@ async function ServicesContent({ searchParams }: Pick<PageProps<"/attendance/ser
     return <NoAccess />;
   }
 
-  const { params, page, from } = parseListParams(await searchParams);
+  const { params, page, from, pageSize } = await getListParams(await searchParams);
   const [list, types, groups, settings, today] = await Promise.all([
     listSessions(params, from),
     getLookup("attendance_types"),
@@ -117,7 +117,7 @@ async function ServicesContent({ searchParams }: Pick<PageProps<"/attendance/ser
               );
             })}
           </ul>
-          <Pagination params={params} page={page} pageSize={PAGE_SIZE} total={list.total} />
+          <Pagination params={params} page={page} pageSize={pageSize} total={list.total} />
         </>
       )}
     </>

@@ -27,7 +27,8 @@ await db.exec(`
   create table auth.users (
     id uuid primary key default gen_random_uuid(),
     email text,
-    raw_user_meta_data jsonb not null default '{}'
+    raw_user_meta_data jsonb not null default '{}',
+    last_sign_in_at timestamptz
   );
   create function auth.uid() returns uuid language sql stable as $$
     select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
@@ -105,6 +106,11 @@ async function makeUser(email, roleKey) {
   const [{ id }] = await rows(
     `insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id`,
     [email, JSON.stringify({ full_name: email.split("@")[0] })],
+  );
+  // Accounts start pending; these fixtures stand for ones an admin created.
+  await db.query(
+    `update public.profiles set approval_status = 'approved', account_status = 'active', registration_source = 'admin_created' where id = $1`,
+    [id],
   );
   if (roleKey) {
     await db.query(
@@ -824,6 +830,310 @@ await as(pastor, async () => {
 await as(financeViewer, async () => {
   check("proofs: finance viewers can see payment proofs", (await count(`select 1 from storage.objects where bucket_id = 'payment-proofs'`)) === 1);
   check("proofs: finance viewers cannot upload", await denied(`insert into storage.objects (bucket_id, name) values ('payment-proofs', 'x.png')`));
+});
+
+// --- self sign-up and approval ----------------------------------------------------------
+
+const signup = async (email, meta) =>
+  (await rows(`insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id`, [email, JSON.stringify(meta)]))[0].id;
+const applicant = await signup("juan@test.local", {
+  signup: "self", first_name: "Juan", last_name: "Dela Cruz", mobile_number: "0900 555 0000",
+  is_existing_member: "true", member_hint: "Grace cell group",
+  // Things a browser might try to slip in. None of them are read.
+  approval_status: "approved", account_status: "active", registration_source: "admin_created", role: "super_admin",
+});
+const [pendingProfile] = await rows(`select * from public.profiles where id = $1`, [applicant]);
+check(
+  "signup: a new account is pending whatever it sends",
+  pendingProfile.approval_status === "pending" && pendingProfile.account_status === "pending" && pendingProfile.is_active === false && pendingProfile.registration_source === "self_signup",
+  JSON.stringify(pendingProfile).slice(0, 160),
+);
+check("signup: applicant details are stored", pendingProfile.first_name === "Juan" && pendingProfile.is_existing_member === true && pendingProfile.member_hint === "Grace cell group");
+check("signup: no role is given", (await count(`select 1 from public.user_roles where user_id = $1`, [applicant])) === 0);
+check("signup: user managers are notified", (await count(`select 1 from public.notifications where dedupe_key = $1 and user_id = $2`, [`registration:${applicant}`, admin])) === 1);
+
+await as(applicant, async () => {
+  check("pending: sees no people", (await count(`select 1 from public.people`)) === 0);
+  check("pending: sees no settings", (await count(`select 1 from public.church_settings`)) === 0);
+  check("pending: sees no events", (await count(`select 1 from public.events`)) === 0);
+  check("pending: sees no finance", (await count(`select 1 from public.giving_records`)) === 0);
+  const [{ a }] = await rows(`select public.get_my_access() as a`);
+  check("pending: access payload says pending, with no permissions", a.profile.approval_status === "pending" && a.permissions.length === 0);
+  check("pending: cannot approve itself by editing the profile", await denied(`update public.profiles set approval_status = 'approved', account_status = 'active' where id = $1`, [applicant]));
+  check("pending: cannot flip is_active", await denied(`update public.profiles set is_active = true where id = $1`, [applicant]));
+  check("pending: cannot call the approval function", await denied(`select public.approve_registration($1, $2)`, [applicant, memberRole]));
+  check("pending: cannot give itself a role", await denied(`insert into public.user_roles (user_id, role_id) values ($1, $2)`, [applicant, memberRole]));
+});
+
+const [{ id: pastorRole }] = await rows(`select id from public.roles where key = 'pastor'`);
+const [{ id: superRole }] = await rows(`select id from public.roles where key = 'super_admin'`);
+const [{ id: financeRole }] = await rows(`select id from public.roles where key = 'finance_viewer'`);
+await as(pastor, async () => {
+  check("approval: a pastor cannot approve accounts", await denied(`select public.approve_registration($1, $2)`, [applicant, memberRole]));
+});
+await as(userAdmin, async () => {
+  const assignable = (await rows(`select key from public.assignable_roles()`)).map((r) => r.key);
+  check(
+    "approval: a user manager can offer Member, Cell Leader and Pastor",
+    ["member", "cell_leader", "pastor"].every((key) => assignable.includes(key)),
+    assignable.join(","),
+  );
+  check("approval: but not Super Admin or roles with finance access", !assignable.includes("super_admin") && !assignable.includes("finance_viewer"));
+  check("approval: cannot approve someone as Super Admin", await denied(`select public.approve_registration($1, $2)`, [applicant, superRole]));
+  check("approval: cannot approve someone into a finance role", await denied(`select public.approve_registration($1, $2)`, [applicant, financeRole]));
+  check("approval: cannot hand out a finance role directly either", await denied(`insert into public.user_roles (user_id, role_id) values ($1, $2)`, [nobody, financeRole]));
+  check("approval: linking to a member who already has a login is refused", await denied(`select public.approve_registration($1, $2, 'link', $3)`, [applicant, memberRole, memberPerson]));
+  await db.query(`select public.approve_registration($1, $2, 'link', $3)`, [applicant, memberRole, outsider]);
+});
+const [approved] = await rows(`select * from public.profiles where id = $1`, [applicant]);
+check("approval: the account becomes approved and active", approved.approval_status === "approved" && approved.account_status === "active" && approved.is_active === true && approved.approved_by === userAdmin);
+check("approval: the login is linked to the chosen member, not a new one", (await rows(`select user_id from public.people where id = $1`, [outsider]))[0].user_id === applicant);
+check("approval: no duplicate member was created", (await count(`select 1 from public.people where first_name = 'Juan'`)) === 0);
+check("approval: it is logged", (await count(`select 1 from public.activity_logs where description like 'Account approved: juan@test.local%'`)) === 1);
+check("approval: the linking is logged", (await count(`select 1 from public.activity_logs where description like 'Member linked to account:%'`)) === 1);
+check("approval: the applicant is notified", (await count(`select 1 from public.notifications where user_id = $1 and title = 'Your account was approved'`, [applicant])) === 1);
+await as(applicant, async () => {
+  const [{ a }] = await rows(`select public.get_my_access() as a`);
+  check("approved: gets Member permissions only", JSON.stringify(a.permissions) === JSON.stringify(["events.view"]), JSON.stringify(a.permissions));
+  check("approved: still sees no finance or care", (await count(`select 1 from public.giving_records`)) === 0 && (await count(`select 1 from public.pastoral_care_records`)) === 0);
+});
+
+const second = await signup("maria@test.local", { signup: "self", first_name: "Maria", last_name: "Santos" });
+await as(admin, async () => {
+  await db.query(`select public.reject_registration($1, 'Unable to verify church membership.')`, [second]);
+});
+const [rejected] = await rows(`select * from public.profiles where id = $1`, [second]);
+check("rejection: status, who and why are stored", rejected.approval_status === "rejected" && rejected.is_active === false && rejected.rejected_by === admin && rejected.rejection_reason === "Unable to verify church membership.");
+check("rejection: the reason is not copied into the activity log", (await count(`select 1 from public.activity_logs where description ilike '%Unable to verify%'`)) === 0);
+await as(second, async () => {
+  check("rejected: sees no people", (await count(`select 1 from public.people`)) === 0);
+  check("rejected: cannot re-open its own registration", await denied(`update public.profiles set approval_status = 'pending' where id = $1`, [second]));
+});
+
+const third = await signup("pedro@test.local", { signup: "self", first_name: "Pedro", last_name: "Reyes", mobile_number: "0900 555 0001" });
+await as(admin, async () => {
+  await db.query(`select public.approve_registration($1, $2, 'create')`, [third, pastorRole]);
+});
+const [created] = await rows(`select person_type, member_code, user_id from public.people where first_name = 'Pedro' and last_name = 'Reyes'`);
+check("approval: 'create' makes one new member record linked to the login", created?.user_id === third && created.person_type === "member" && Boolean(created.member_code));
+
+await db.query(`update public.profiles set is_active = false where id = $1`, [third]);
+check("status: suspending through is_active sets account_status", (await rows(`select account_status from public.profiles where id = $1`, [third]))[0].account_status === "suspended");
+await db.query(`update public.profiles set account_status = 'active' where id = $1`, [third]);
+check("status: reactivating through account_status sets is_active", (await rows(`select is_active from public.profiles where id = $1`, [third]))[0].is_active === true);
+
+// --- members and user accounts ---------------------------------------------------------
+
+const visitorForLink = (await rows(`insert into public.people (person_type, first_name, last_name) values ('visitor', 'Vera', 'Visitor') returning id`))[0].id;
+const loginA = await makeUser("link-a@test.local", "member");
+const loginB = await makeUser("link-b@test.local", "member");
+const freeMember = await makePerson("Free", "Member");
+await as(pastor, async () => {
+  check("accounts: a pastor cannot read the account directory", (await count(`select 1 from public.account_directory()`)) === 0);
+  check("accounts: a pastor cannot link an account", await denied(`select public.link_member_account($1, $2)`, [loginA, freeMember]));
+});
+await as(userAdmin, async () => {
+  check("accounts: a visitor cannot be given an account", await denied(`select public.link_member_account($1, $2)`, [loginA, visitorForLink]));
+  await db.query(`select public.link_member_account($1, $2)`, [loginA, freeMember]);
+  check("accounts: a member cannot get a second account", await denied(`select public.link_member_account($1, $2)`, [loginB, freeMember]));
+  check("accounts: an account cannot be linked to a second member", await denied(`select public.link_member_account($1, $2)`, [loginA, memberPerson]));
+  const [row] = await rows(`select * from public.account_directory() where user_id = $1`, [loginA]);
+  check("accounts: the directory shows the member and the role", row?.person_id === freeMember && row.display_name === "Free Member" && row.role_names.includes("Member"), JSON.stringify(row).slice(0, 200));
+});
+check("accounts: one login cannot be written onto two members, even by the owner", await denied(`update public.people set user_id = $1 where id = $2`, [loginA, memberPerson]));
+check("accounts: the account takes the member's name", (await rows(`select full_name from public.profiles where id = $1`, [loginA]))[0].full_name === "Free Member");
+await db.query(`update public.people set first_name = 'Freya' where id = $1`, [freeMember]);
+check("accounts: and follows when the member is renamed", (await rows(`select full_name from public.profiles where id = $1`, [loginA]))[0].full_name === "Freya Member");
+await db.query(`update auth.users set email = 'freya@test.local' where id = $1`, [loginA]);
+const [afterEmail] = await rows(`select pr.email as login, pe.email as contact from public.profiles pr join public.people pe on pe.user_id = pr.id where pr.id = $1`, [loginA]);
+check("accounts: a new login email reaches the account, not the member's contact email", afterEmail.login === "freya@test.local" && afterEmail.contact === null, JSON.stringify(afterEmail));
+
+await as(admin, async () => {
+  check("archive: a member with an active account cannot be archived on its own", await denied(`update public.people set archived_at = now() where id = $1`, [freeMember]));
+});
+await as(pastor, async () => {
+  check("archive: needs user management to disable the account", await denied(`select public.archive_member_and_disable_account($1)`, [freeMember]));
+});
+await as(admin, async () => {
+  await db.query(`select public.archive_member_and_disable_account($1)`, [freeMember]);
+});
+const [archivedMember] = await rows(`select pe.archived_at, pe.user_id, pr.is_active, pr.account_status from public.people pe join public.profiles pr on pr.id = pe.user_id where pe.id = $1`, [freeMember]);
+check("archive: the member is archived and the account disabled, both kept", archivedMember.archived_at !== null && archivedMember.user_id === loginA && archivedMember.is_active === false && archivedMember.account_status === "disabled");
+check("archive: the Auth user is not deleted", (await count(`select 1 from auth.users where id = $1`, [loginA])) === 1);
+await as(loginA, async () => {
+  check("archive: the disabled account sees nothing", (await count(`select 1 from public.people`)) === 0);
+});
+await as(userAdmin, async () => {
+  check("accounts: an archived member cannot be given an account", await denied(`select public.link_member_account($1, $2)`, [loginB, freeMember]));
+});
+
+// --- typography ------------------------------------------------------------------------
+
+const [{ b: publicBranding }] = await rows(`select public.get_public_branding() as b`);
+check("typography: defaults reach the public branding", publicBranding.primary_font === "inter" && publicBranding.base_font_size === 16 && publicBranding.heading_font === "same");
+await as(pastor, async () => {
+  check("typography: a pastor cannot change it", (await affected(`update public.system_appearance_settings set primary_font = 'poppins'`)) === 0);
+});
+await as(admin, async () => {
+  check("typography: unknown fonts are refused", await denied(`update public.system_appearance_settings set primary_font = 'Comic Sans'`));
+  check("typography: a font URL is refused", await denied(`update public.system_appearance_settings set heading_font = 'https://example.com/font.woff2'`));
+  check("typography: a base size that is too small is refused", await denied(`update public.system_appearance_settings set base_font_size = 10`));
+  check("typography: a base size that is too large is refused", await denied(`update public.system_appearance_settings set base_font_size = 40`));
+  check("typography: captions cannot go below 11px", await denied(`update public.system_appearance_settings set caption_font_size = 8`));
+  const logsBefore = await count(`select 1 from public.activity_logs where module = 'appearance'`);
+  await db.query(`update public.system_appearance_settings set primary_font = 'poppins', heading_font = 'montserrat', mobile_font_scale = 'comfortable'`);
+  check("typography: saving writes one 'Updated system typography' entry", (await count(`select 1 from public.activity_logs where description = 'Updated system typography' and user_id = $1`, [admin])) === 1);
+  check("typography: and no branding entry when only typography changed", (await count(`select 1 from public.activity_logs where module = 'appearance'`)) === logsBefore + 1);
+  await db.query(`update public.system_appearance_settings set updated_by = $1`, [admin]);
+  check("typography: saving without changes logs nothing", (await count(`select 1 from public.activity_logs where module = 'appearance'`)) === logsBefore + 1);
+});
+check("typography: the saved fonts reach the public branding", (await rows(`select public.get_public_branding() as b`))[0].b.heading_font === "montserrat");
+
+// --- login page content -----------------------------------------------------------------
+
+const [{ b: loginDefaults }] = await rows(`select public.get_public_branding() as b`);
+check(
+  "login content: defaults reach the public branding",
+  loginDefaults.login_welcome_message.startsWith("Connecting people.") && loginDefaults.login_bible_verse_reference === "Hebrews 10:24" && loginDefaults.show_login_bible_verse === true,
+);
+await as(pastor, async () => {
+  check("login content: a pastor cannot change it", (await affected(`update public.system_appearance_settings set login_welcome_message = 'Hi'`)) === 0);
+});
+await as(admin, async () => {
+  check("login content: a message over 200 characters is refused", await denied(`update public.system_appearance_settings set login_welcome_message = repeat('x', 201)`));
+  check("login content: a verse over 300 characters is refused", await denied(`update public.system_appearance_settings set login_bible_verse = repeat('x', 301)`));
+  const logsBefore = await count(`select 1 from public.activity_logs where module = 'appearance'`);
+  await db.query(`update public.system_appearance_settings set login_welcome_message = 'Welcome home.', show_login_bible_verse = false`);
+  check("login content: saving writes one 'Updated login page content' entry", (await count(`select 1 from public.activity_logs where description = 'Updated login page content' and user_id = $1`, [admin])) === 1);
+  check("login content: and nothing else", (await count(`select 1 from public.activity_logs where module = 'appearance'`)) === logsBefore + 1);
+  check("login content: the text is not copied into the log", (await count(`select 1 from public.activity_logs where description ilike '%Welcome home%'`)) === 0);
+  await db.query(`update public.system_appearance_settings set login_bible_verse = ''`);
+  check("login content: an empty verse is allowed", (await rows(`select login_bible_verse from public.system_appearance_settings`))[0].login_bible_verse === "");
+});
+const [{ b: loginSaved }] = await rows(`select public.get_public_branding() as b`);
+check("login content: saved text and the hidden verse reach the login page", loginSaved.login_welcome_message === "Welcome home." && loginSaved.show_login_bible_verse === false);
+
+// --- rows per page ---------------------------------------------------------------------
+
+check("paging: the default is 20 rows", (await rows(`select rows_per_page from public.church_settings`))[0].rows_per_page === 20);
+await as(pastor, async () => {
+  check("paging: a pastor can read the setting", (await rows(`select rows_per_page from public.church_settings`))[0]?.rows_per_page === 20);
+  check("paging: but cannot change it", (await affected(`update public.church_settings set rows_per_page = 50`)) === 0);
+});
+await as(admin, async () => {
+  check("paging: an unsupported size is refused", await denied(`update public.church_settings set rows_per_page = 5000`));
+  check("paging: an administrator can change it", (await affected(`update public.church_settings set rows_per_page = 50`)) === 1);
+});
+
+// --- motion settings -------------------------------------------------------------------
+
+const [{ b: motionDefaults }] = await rows(`select public.get_public_branding() as b`);
+check("motion: defaults are on, subtle, with scroll reveal", motionDefaults.animations_enabled === true && motionDefaults.animation_level === "subtle" && motionDefaults.scroll_reveal_enabled === true);
+await as(pastor, async () => {
+  check("motion: a pastor cannot change it", (await affected(`update public.system_appearance_settings set animation_level = 'normal'`)) === 0);
+});
+await as(admin, async () => {
+  check("motion: an unknown level is refused", await denied(`update public.system_appearance_settings set animation_level = 'extreme'`));
+  const logsBefore = await count(`select 1 from public.activity_logs where module = 'appearance'`);
+  await db.query(`update public.system_appearance_settings set animation_level = 'normal', scroll_reveal_enabled = false`);
+  check("motion: saving writes one motion entry and nothing else", (await count(`select 1 from public.activity_logs where description = 'Updated motion and animation settings'`)) === 1 && (await count(`select 1 from public.activity_logs where module = 'appearance'`)) === logsBefore + 1);
+});
+
+// --- system background ------------------------------------------------------------------
+
+const [{ b: backgroundDefaults }] = await rows(`select public.get_public_branding() as b`);
+check(
+  "background: off by default, with no picture and a readable overlay",
+  backgroundDefaults.system_background_enabled === false && backgroundDefaults.system_background_path === null && backgroundDefaults.background_overlay_opacity_light === 75 && backgroundDefaults.card_background_style === "solid",
+);
+await as(pastor, async () => {
+  check("background: a pastor cannot change it", (await affected(`update public.system_appearance_settings set system_background_enabled = true`)) === 0);
+});
+await as(admin, async () => {
+  check("background: an unknown size is refused", await denied(`update public.system_appearance_settings set background_size = 'stretch'`));
+  check("background: too much blur is refused", await denied(`update public.system_appearance_settings set background_blur = 40`));
+  check("background: a sidebar that is too see-through is refused", await denied(`update public.system_appearance_settings set sidebar_opacity = 20`));
+  check("background: an overlay colour must be a HEX colour", await denied(`update public.system_appearance_settings set background_overlay_color_light = 'white'`));
+  const logsBefore = await count(`select 1 from public.activity_logs where module = 'appearance'`);
+  await db.query(`update public.system_appearance_settings set system_background_path = 'system-background-test.webp', system_background_enabled = true, background_blur = 4`);
+  check("background: saving writes one background entry and nothing else", (await count(`select 1 from public.activity_logs where description = 'Updated system background appearance'`)) === 1 && (await count(`select 1 from public.activity_logs where module = 'appearance'`)) === logsBefore + 1);
+});
+const [{ b: backgroundSaved }] = await rows(`select public.get_public_branding() as b`);
+check("background: it is separate from the login background", backgroundSaved.system_background_path === "system-background-test.webp" && backgroundSaved.login_background_path === null);
+
+// --- giving collections (batch entry) ---------------------------------------------------
+
+const [{ id: coll_tithes }] = await rows(`select id from public.giving_categories order by sort_order, name limit 1`);
+const [{ id: coll_cashMethod }] = await rows(`select id from public.payment_methods where kind = 'cash' limit 1`);
+const [{ id: coll_walletMethod }] = await rows(`select id from public.payment_methods where kind = 'e_wallet' limit 1`);
+const [{ id: coll_cashAccount }] = await rows(`insert into public.financial_accounts (name, account_type) values ('Collection Test Cash', 'cash') returning id`);
+const givingTotal = async () => Number((await rows(`select coalesce(sum(amount), 0) as t from public.giving_records`))[0].t);
+const accountBalance = async () => Number((await rows(`select coalesce(sum(amount), 0) as t from public.giving_records where financial_account_id = $1`, [coll_cashAccount]))[0].t);
+const coll_header = JSON.stringify({ collection_name: "Sunday Service - Test", collection_date: "2026-10-18", entry_mode: "summary", notes: "" });
+const coll_lines = JSON.stringify([
+  { category_id: coll_tithes, payment_method_id: coll_cashMethod, financial_account_id: coll_cashAccount, amount: 15000 },
+  { category_id: coll_tithes, payment_method_id: coll_walletMethod, amount: 4000, reference_number: "REF-COLL-1" },
+]);
+const totalBefore = await givingTotal();
+
+await as(financeViewer, async () => {
+  check("collections: a finance viewer cannot create one", await denied(`select public.save_giving_collection(null, $1::jsonb, $2::jsonb)`, [coll_header, coll_lines]));
+});
+let collectionId;
+await as(admin, async () => {
+  collectionId = (await rows(`select public.save_giving_collection(null, $1::jsonb, $2::jsonb) as id`, [coll_header, coll_lines]))[0].id;
+  check("collections: an entry needs a category and a method", await denied(`select public.save_giving_collection(null, $1::jsonb, $2::jsonb)`, [coll_header, JSON.stringify([{ amount: 100 }])]));
+  check("collections: an amount must be more than zero", await denied(`select public.save_giving_collection(null, $1::jsonb, $2::jsonb)`, [coll_header, JSON.stringify([{ category_id: coll_tithes, payment_method_id: coll_cashMethod, amount: 0 }])]));
+});
+check("collections: a draft adds nothing to giving", (await givingTotal()) === totalBefore);
+const [coll_draft] = await rows(`select status, entry_count, total from public.giving_collection_summary where id = $1`, [collectionId]);
+check("collections: the draft's total comes from its lines", coll_draft.status === "draft" && coll_draft.entry_count === 2 && Number(coll_draft.total) === 19000, JSON.stringify(coll_draft));
+
+await as(admin, async () => {
+  // Saving again replaces the coll_lines instead of adding to them.
+  await db.query(`select public.save_giving_collection($1, $2::jsonb, $3::jsonb)`, [collectionId, coll_header, coll_lines]);
+});
+check("collections: saving a draft again does not duplicate its lines", (await count(`select 1 from public.giving_collection_entries where collection_id = $1`, [collectionId])) === 2);
+
+await as(pastor, async () => {
+  check("collections: a pastor cannot see collections", (await count(`select 1 from public.giving_collections`)) === 0);
+  check("collections: a pastor cannot post one", await denied(`select public.post_giving_collection($1)`, [collectionId]));
+});
+await as(financeViewer, async () => {
+  check("collections: a finance viewer can see them", (await count(`select 1 from public.giving_collection_summary`)) === 1);
+  check("collections: but cannot post", await denied(`select public.post_giving_collection($1)`, [collectionId]));
+  check("collections: nor write the tables directly", await denied(`update public.giving_collections set status = 'posted' where id = $1`, [collectionId]));
+});
+await as(admin, async () => {
+  const [{ n }] = await rows(`select public.post_giving_collection($1) as n`, [collectionId]);
+  check("collections: posting reports how many entries it made", n === 2);
+  check("collections: a posted collection cannot be posted twice", await denied(`select public.post_giving_collection($1)`, [collectionId]));
+  check("collections: nor edited", await denied(`select public.save_giving_collection($1, $2::jsonb, $3::jsonb)`, [collectionId, coll_header, coll_lines]));
+  check("collections: nor discarded", await denied(`select public.discard_giving_collection($1)`, [collectionId]));
+});
+check("collections: posting adds exactly the lines, once (no double counting)", (await givingTotal()) === totalBefore + 19000, String(await givingTotal()));
+check("collections: the money reaches the chosen account", (await accountBalance()) === 15000);
+check("collections: each record is linked to its collection and dated with it", (await count(`select 1 from public.giving_records where collection_id = $1 and giving_date = '2026-10-18'`, [collectionId])) === 2);
+check("collections: amounts are not written to the activity log", (await count(`select 1 from public.activity_logs where description like 'Giving collection%' and description ~ '19[,]?000'`)) === 0);
+await as(admin, async () => {
+  const [record] = await rows(`select id from public.giving_records where collection_id = $1 limit 1`, [collectionId]);
+  check("collections: a posted entry cannot be edited on its own", await denied(`update public.giving_records set amount = 1 where id = $1`, [record.id]));
+  check("collections: nor deleted on its own", await denied(`delete from public.giving_records where id = $1`, [record.id]));
+  check("collections: an ordinary record cannot be slipped into a collection", await denied(`insert into public.giving_records (giving_date, category_id, amount, collection_id) values (current_date, $1, 5, $2)`, [coll_tithes, collectionId]));
+  const found = await rows(`select * from public.existing_giving_references($1::text[])`, [["ref-coll-1", "NOPE"]]);
+  check("collections: an existing reference number is found, whatever its case", found.length === 1 && found[0].collection_name === "Sunday Service - Test");
+  check("collections: but not when it is the collection's own", (await count(`select 1 from public.existing_giving_references($1::text[], $2)`, [["REF-COLL-1"], collectionId])) === 0);
+  await db.query(`select public.void_giving_collection($1, 'Entered twice')`, [collectionId]);
+});
+check("collections: voiding takes the money back out", (await givingTotal()) === totalBefore && (await accountBalance()) === 0);
+const [coll_voided] = await rows(`select status, void_reason, entry_count, total from public.giving_collection_summary where id = $1`, [collectionId]);
+check("collections: the voided collection and its lines are kept as history", coll_voided.status === "voided" && coll_voided.void_reason === "Entered twice" && coll_voided.entry_count === 2 && Number(coll_voided.total) === 19000);
+check("collections: created, posted and voided are logged", (await count(`select 1 from public.activity_logs where record_id = $1 and action in ('created', 'posted', 'voided')`, [collectionId])) === 3);
+await as(admin, async () => {
+  const id = (await rows(`select public.save_giving_collection(null, $1::jsonb, '[]'::jsonb) as id`, [coll_header]))[0].id;
+  check("collections: an empty collection cannot be posted", await denied(`select public.post_giving_collection($1)`, [id]));
+  await db.query(`select public.discard_giving_collection($1)`, [id]);
+  check("collections: a draft can be discarded", (await count(`select 1 from public.giving_collections where id = $1`, [id])) === 0);
 });
 
 // --- demo data removal ---------------------------------------------------------------

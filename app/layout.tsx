@@ -1,21 +1,15 @@
 import type { CSSProperties } from "react";
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { brandingAssetUrl, getBranding } from "@/lib/branding";
+import { fontVariables } from "@/lib/fonts";
+import { motionLevel, REVEAL_SCRIPT, scrollRevealOn } from "@/lib/motion";
 import { brandVariables } from "@/lib/theme";
+import { typographyVariables } from "@/lib/typography";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getBranding();
@@ -50,11 +44,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-      style={brandVariables(branding) as CSSProperties}
+      className={`${fontVariables} h-full antialiased`}
+      style={{ ...brandVariables(branding), ...typographyVariables(branding) } as CSSProperties}
+      data-motion={motionLevel(branding)}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        {/* Scroll reveal: one small observer for the whole app (see lib/motion.ts). */}
+        {scrollRevealOn(branding) ? <script dangerouslySetInnerHTML={{ __html: REVEAL_SCRIPT }} /> : null}
         <ThemeProvider
           defaultTheme={branding.default_theme}
           allowOverride={branding.allow_user_theme_override}

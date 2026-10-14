@@ -1,5 +1,5 @@
 import "server-only";
-import { cleanSearchTerm, isUuid, PAGE_SIZE } from "@/lib/data/common";
+import { cleanSearchTerm, isUuid, getPageSize } from "@/lib/data/common";
 import { createClient } from "@/lib/supabase/server";
 import type { Person, PersonType } from "@/lib/types";
 import { describeError } from "@/lib/errors";
@@ -47,7 +47,7 @@ export async function listPeople(
   const { data, count, error } = await query
     .order(sort, { ascending, nullsFirst: false })
     .order("id")
-    .range(from, from + PAGE_SIZE - 1);
+    .range(from, from + (await getPageSize()) - 1);
 
   if (error) {
     console.error("Failed to list people", describeError(error));

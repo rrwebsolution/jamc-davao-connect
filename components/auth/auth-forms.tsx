@@ -4,15 +4,16 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { CircleAlert, CircleCheck, Eye, EyeOff } from "lucide-react";
 import type { z } from "zod";
-import { requestPasswordReset, signIn, updatePassword } from "@/app/(auth)/actions";
+import { requestPasswordReset, signIn, signUp, updatePassword } from "@/app/(auth)/actions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Field, PendingButton } from "@/components/shared/form";
-import { forgotPasswordSchema, loginSchema, passwordSchema } from "@/lib/validation";
+import { Textarea } from "@/components/ui/textarea";
+import { forgotPasswordSchema, loginSchema, passwordSchema, signUpSchema } from "@/lib/validation";
 
 function ErrorBanner({ message }: { message: string | null }) {
   return message ? (
@@ -28,7 +29,7 @@ const FIELD = "h-11 rounded-lg text-base sm:text-sm";
 export function AuthHeading({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
     <div className="mb-7">
-      <h2 className="text-2xl font-semibold tracking-tight sm:text-[1.7rem]">{title}</h2>
+      <h2 data-type="page-title" className="tracking-tight">{title}</h2>
       {children ? <p className="mt-1.5 text-sm text-muted-foreground">{children}</p> : null}
     </div>
   );
@@ -146,6 +147,127 @@ export function LoginForm({ systemName }: { systemName: string }) {
         <PendingButton type="submit" pending={pending} pendingText="Signing in…" className="h-11 w-full rounded-lg text-base sm:text-sm">
           Sign In
         </PendingButton>
+        <p className="text-center text-sm text-muted-foreground">
+          Don&apos;t have an account?{" "}
+          <Link href="/sign-up" className="font-medium text-link underline-offset-4 hover:underline">
+            Create an account
+          </Link>
+        </p>
+      </form>
+    </>
+  );
+}
+
+export function SignUpForm({ systemName }: { systemName: string }) {
+  const [pending, startTransition] = useTransition();
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const form = useForm<z.input<typeof signUpSchema>>({
+    resolver: zodResolver(signUpSchema) as never,
+    defaultValues: {
+      first_name: "", middle_name: "", last_name: "", email: "", mobile_number: "",
+      password: "", confirm: "", is_existing_member: false, member_hint: "",
+    },
+  });
+  const { errors } = form.formState;
+  const isMember = useWatch({ control: form.control, name: "is_existing_member" });
+
+  const onSubmit = form.handleSubmit(() => {
+    setError(null);
+    startTransition(async () => {
+      // On success the action redirects to the confirmation page.
+      const result = await signUp(form.getValues());
+      if (result && !result.ok) setError(result.error);
+    });
+  });
+
+  return (
+    <>
+      <AuthHeading title="Create an account">
+        Register for {systemName}. A church administrator reviews every registration before it can be used.
+      </AuthHeading>
+      <form onSubmit={onSubmit} className="space-y-4" noValidate aria-busy={pending}>
+        {error ? (
+          <div className="flex gap-2.5 rounded-lg border border-destructive/25 bg-destructive/8 px-3.5 py-3 text-sm text-destructive" role="alert">
+            <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <p>{error}</p>
+          </div>
+        ) : null}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="First Name" htmlFor="first_name" required error={errors.first_name?.message}>
+            <Input id="first_name" autoComplete="given-name" disabled={pending} className={FIELD} {...form.register("first_name")} />
+          </Field>
+          <Field label="Last Name" htmlFor="last_name" required error={errors.last_name?.message}>
+            <Input id="last_name" autoComplete="family-name" disabled={pending} className={FIELD} {...form.register("last_name")} />
+          </Field>
+        </div>
+        <Field label="Middle Name" htmlFor="middle_name" hint="Optional" error={errors.middle_name?.message}>
+          <Input id="middle_name" autoComplete="additional-name" disabled={pending} className={FIELD} {...form.register("middle_name")} />
+        </Field>
+        <Field label="Email Address" htmlFor="email" required error={errors.email?.message}>
+          <Input id="email" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} placeholder="name@example.com" disabled={pending} className={FIELD} {...form.register("email")} />
+        </Field>
+        <Field label="Mobile Number" htmlFor="mobile_number" required error={errors.mobile_number?.message}>
+          <Input id="mobile_number" type="tel" inputMode="tel" autoComplete="tel" placeholder="09XX XXX XXXX" disabled={pending} className={FIELD} {...form.register("mobile_number")} />
+        </Field>
+        <Field label="Password" htmlFor="password" required error={errors.password?.message} hint="At least 8 characters.">
+          <div className="relative">
+            <Input id="password" type={showPassword ? "text" : "password"} autoComplete="new-password" disabled={pending} className={`${FIELD} pr-11`} {...form.register("password")} />
+            <button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => setShowPassword((current) => !current)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+              className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {showPassword ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
+            </button>
+          </div>
+        </Field>
+        <Field label="Confirm Password" htmlFor="confirm" required error={errors.confirm?.message}>
+          <Input id="confirm" type={showPassword ? "text" : "password"} autoComplete="new-password" disabled={pending} className={FIELD} {...form.register("confirm")} />
+        </Field>
+
+        <div className="rounded-lg border bg-card p-4">
+          <label className="flex items-start gap-3 text-sm font-medium">
+            <Checkbox
+              checked={Boolean(isMember)}
+              onCheckedChange={(checked) => form.setValue("is_existing_member", Boolean(checked))}
+              disabled={pending}
+              className="mt-0.5"
+            />
+            <span>
+              I am already a member of the church
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                An administrator will match your account to your existing member record.
+              </span>
+            </span>
+          </label>
+          {isMember ? (
+            <div className="mt-4 border-t pt-4">
+              <Field
+                label="Help us find your record"
+                htmlFor="member_hint"
+                hint="For example your cell group, your leader's name, or your birthday. Only administrators see this."
+                error={errors.member_hint?.message}
+              >
+                <Textarea id="member_hint" rows={2} disabled={pending} {...form.register("member_hint")} />
+              </Field>
+            </div>
+          ) : null}
+        </div>
+
+        <PendingButton type="submit" pending={pending} pendingText="Submitting…" className="h-11 w-full rounded-lg text-base sm:text-sm">
+          Create Account
+        </PendingButton>
+        <p className="text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link href="/login" className="font-medium text-link underline-offset-4 hover:underline">
+            Sign in
+          </Link>
+        </p>
       </form>
     </>
   );

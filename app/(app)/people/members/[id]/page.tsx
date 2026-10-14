@@ -5,15 +5,15 @@ import { PageSkeleton } from "@/components/shared/states";
 
 export const metadata: Metadata = { title: "Member profile" };
 
-async function Content({ params }: Pick<PageProps<"/people/members/[id]">, "params">) {
-  const { id } = await params;
-  return <PersonProfilePage mode="member" id={id} />;
+async function Content({ params, searchParams }: PageProps<"/people/members/[id]">) {
+  const [{ id }, query] = await Promise.all([params, searchParams]);
+  return <PersonProfilePage mode="member" id={id} openAccountDialog={query.account === "new"} />;
 }
 
-export default function Page({ params }: PageProps<"/people/members/[id]">) {
+export default function Page({ params, searchParams }: PageProps<"/people/members/[id]">) {
   return (
     <PageBoundary fallback={<PageSkeleton variant="detail" />}>
-      <Content params={params} />
+      <Content params={params} searchParams={searchParams} />
     </PageBoundary>
   );
 }

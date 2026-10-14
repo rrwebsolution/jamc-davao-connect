@@ -54,16 +54,19 @@ function NavLink({
   item,
   collapsed,
   active,
+  badge,
   onNavigate,
 }: {
   item: NavItem;
   collapsed: boolean;
   active: boolean;
+  /** A count shown next to the item, e.g. registrations waiting for approval. */
+  badge?: number;
   onNavigate: (href: string) => void;
 }) {
   const Icon = item.icon;
   const base = cn(
-    "flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm transition-colors",
+    "flex h-9 items-center gap-2.5 rounded-lg px-2.5 type-sidebar transition-colors",
     collapsed && "justify-center px-0",
   );
 
@@ -76,6 +79,7 @@ function NavLink({
       title={collapsed ? item.title : undefined}
       className={cn(
         base,
+        "relative",
         active
           ? "bg-sidebar-primary font-medium text-sidebar-primary-foreground"
           : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -83,7 +87,18 @@ function NavLink({
     >
       <Icon className="size-4 shrink-0" aria-hidden />
       {collapsed ? <span className="sr-only">{item.title}</span> : <span className="truncate">{item.title}</span>}
-      {collapsed ? null : <LinkPending />}
+      {badge ? (
+        <span
+          className={cn(
+            "flex h-5 min-w-5 items-center justify-center rounded-full bg-highlight px-1.5 text-[11px] font-semibold text-highlight-foreground",
+            collapsed ? "absolute right-1 top-0.5 h-4 min-w-4 px-1 text-[10px]" : "ml-auto",
+          )}
+          aria-label={`${badge} waiting`}
+        >
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : null}
+      {collapsed || badge ? null : <LinkPending />}
     </Link>
   );
 }
@@ -92,11 +107,13 @@ function SidebarContent({
   brand,
   permissions,
   collapsed,
+  badges,
   onNavigate,
 }: {
   brand: ShellBrand;
   permissions: string[];
   collapsed: boolean;
+  badges: Record<string, number>;
   onNavigate?: () => void;
 }) {
   const sections = NAV.map((section) => ({
@@ -140,6 +157,7 @@ function SidebarContent({
                 item={item}
                 collapsed={collapsed}
                 active={isActive(target, item.href)}
+                badge={badges[item.href]}
                 onNavigate={(href) => {
                   setPending({ href, from: pathname });
                   onNavigate?.();
@@ -205,12 +223,15 @@ export function AppShell({
   user,
   permissions,
   allowThemeToggle,
+  badges = {},
   children,
 }: {
   brand: ShellBrand;
   user: ShellUser;
   permissions: string[];
   allowThemeToggle: boolean;
+  /** Counts to show beside navigation items, keyed by href. */
+  badges?: Record<string, number>;
   children: ReactNode;
 }) {
   // The server always renders the expanded sidebar; the saved choice applies after hydration.
@@ -237,7 +258,7 @@ export function AppShell({
           collapsed ? "w-16" : "w-64",
         )}
       >
-        <SidebarContent brand={brand} permissions={permissions} collapsed={collapsed} />
+        <SidebarContent brand={brand} permissions={permissions} collapsed={collapsed} badges={badges} />
       </aside>
 
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
@@ -250,6 +271,7 @@ export function AppShell({
             brand={brand}
             permissions={permissions}
             collapsed={false}
+            badges={badges}
             onNavigate={() => setDrawerOpen(false)}
           />
         </SheetContent>
@@ -294,7 +316,7 @@ export function AppShell({
           <PageCacheProvider userId={user.id}>{children}</PageCacheProvider>
         </main>
       </div>
-      <BottomNav permissions={permissions} />
+      <BottomNav permissions={permissions} badges={badges} />
     </div>
   );
 }

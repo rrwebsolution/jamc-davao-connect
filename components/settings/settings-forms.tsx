@@ -64,6 +64,7 @@ export function GeneralSettingsForm({ settings }: { settings: ChurchSettings }) 
       email: settings.email ?? "",
       timezone: settings.timezone,
       date_format: settings.date_format,
+      rows_per_page: String(settings.rows_per_page),
     },
     saveGeneralSettings,
   );
@@ -90,6 +91,20 @@ export function GeneralSettingsForm({ settings }: { settings: ChurchSettings }) 
               {DATE_FORMATS.map((format) => (
                 <option key={format.value} value={format.value}>
                   {format.label}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+          <Field
+            label="Rows per page"
+            htmlFor="rows_per_page"
+            error={error("rows_per_page")}
+            hint="How many rows every list shows before the next page: Members, Visitors, Attendance, Follow-ups, Finance, Activity Logs and the rest."
+          >
+            <NativeSelect id="rows_per_page" {...register("rows_per_page")}>
+              {[10, 20, 25, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  {size} rows
                 </option>
               ))}
             </NativeSelect>

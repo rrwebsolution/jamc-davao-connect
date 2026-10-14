@@ -9,7 +9,7 @@ import { DateFilter, FilterSelect, Pagination, SearchInput } from "@/components/
 import { EmptyState, LoadError, NoAccess, PageHeader, PageSkeleton } from "@/components/shared/states";
 import { can, P } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
-import { getChurchSettings, PAGE_SIZE, parseListParams } from "@/lib/data/common";
+import { getChurchSettings, getListParams } from "@/lib/data/common";
 import { formatDateTime, titleCase } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { describeError } from "@/lib/errors";
@@ -33,7 +33,7 @@ async function LogsContent({ searchParams }: Pick<PageProps<"/admin/activity-log
     return <NoAccess />;
   }
 
-  const { params, page, from } = parseListParams(await searchParams);
+  const { params, page, from, pageSize } = await getListParams(await searchParams);
   const settings = await getChurchSettings();
   const supabase = await createClient();
 
@@ -48,7 +48,7 @@ async function LogsContent({ searchParams }: Pick<PageProps<"/admin/activity-log
   if (/^\d{4}-\d{2}-\d{2}$/.test(params.from ?? "")) query = query.gte("created_at", `${params.from}T00:00:00Z`);
   if (/^\d{4}-\d{2}-\d{2}$/.test(params.to ?? "")) query = query.lte("created_at", `${params.to}T23:59:59Z`);
 
-  const { data, count, error } = await query.order("created_at", { ascending: false }).range(from, from + PAGE_SIZE - 1);
+  const { data, count, error } = await query.order("created_at", { ascending: false }).range(from, from + pageSize - 1);
   if (error) {
     console.error("Failed to load activity logs", describeError(error));
     return <LoadError what="the activity logs" />;
@@ -84,7 +84,7 @@ async function LogsContent({ searchParams }: Pick<PageProps<"/admin/activity-log
         />
       ) : (
         <>
-          <ul className="space-y-2 md:hidden">
+          <ul data-reveal-list="" className="space-y-2 md:hidden">
             {rows.map((row) => (
               <li key={row.id} className="rounded-xl border bg-card p-3 text-sm">
                 <p>{row.description}</p>
@@ -118,7 +118,7 @@ async function LogsContent({ searchParams }: Pick<PageProps<"/admin/activity-log
               </TableBody>
             </Table>
           </div>
-          <Pagination params={params} page={page} pageSize={PAGE_SIZE} total={count ?? 0} />
+          <Pagination params={params} page={page} pageSize={pageSize} total={count ?? 0} />
         </>
       )}
     </>

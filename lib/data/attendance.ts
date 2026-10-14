@@ -1,5 +1,5 @@
 import "server-only";
-import { isUuid, PAGE_SIZE } from "@/lib/data/common";
+import { isUuid, getPageSize } from "@/lib/data/common";
 import { createClient } from "@/lib/supabase/server";
 import type { AttendanceSession } from "@/lib/types";
 import { describeError } from "@/lib/errors";
@@ -65,7 +65,7 @@ export async function listSessions(params: Record<string, string | undefined>, f
   const { data, count, error } = await query
     .order("session_date", { ascending: false })
     .order("created_at", { ascending: false })
-    .range(from, from + PAGE_SIZE - 1);
+    .range(from, from + (await getPageSize()) - 1);
   if (error) {
     console.error("Failed to list sessions", describeError(error));
   }
@@ -146,7 +146,7 @@ export async function listRecords(params: Record<string, string | undefined>, fr
     .order("session_date", { ascending: false })
     .order("person_name")
     .order("id")
-    .range(from, from + PAGE_SIZE - 1);
+    .range(from, from + (await getPageSize()) - 1);
   if (error) {
     console.error("Failed to list attendance records", describeError(error));
   }

@@ -166,7 +166,7 @@ async function MinistryContent({ params }: Pick<PageProps<"/ministries/[id]">, "
         {rows.length === 0 ? (
           <ListEmpty>No one is assigned to this ministry yet.</ListEmpty>
         ) : (
-          <ul className="divide-y">
+          <ul className="scroll-list divide-y">
             {rows.map((row) => (
               <li key={row.id} className="flex items-center justify-between gap-3 p-3">
                 <div className="min-w-0">

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Paperclip, Pencil, Plus, Receipt, Trash2 } from "lucide-react";
+import { Layers, Paperclip, Pencil, Plus, Receipt, Trash2 } from "lucide-react";
 import { deleteExpense, deleteGiving, saveExpense, saveGiving } from "@/app/(app)/module-actions";
 import { buttonVariants } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,7 +11,7 @@ import { DateFilter, FilterSelect, Pagination, SearchInput } from "@/components/
 import { EmptyState, LoadError, NoAccess, PageHeader } from "@/components/shared/states";
 import { can } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
-import { cleanSearchTerm, getChurchSettings, getChurchToday, isUuid, PAGE_SIZE, parseListParams, type RawSearchParams } from "@/lib/data/common";
+import { cleanSearchTerm, getChurchSettings, getChurchToday, isUuid, getListParams, type RawSearchParams } from "@/lib/data/common";
 import { getFinancialAccounts, getPaymentMethods, paymentFields } from "@/lib/data/finance";
 import { getCategoryOptions, getPeopleOptions } from "@/lib/data/options";
 import { formatDate } from "@/lib/format";
@@ -40,6 +40,9 @@ type LedgerRow = {
   check_bank?: string | null;
   check_date?: string | null;
   proof_path?: string | null;
+  /** Set when the record was posted from a collection (batch entry). */
+  collection_id?: string | null;
+  collection_name?: string | null;
 };
 
 const PROOF_UPLOAD = {
@@ -83,7 +86,7 @@ export async function FinanceLedger({ kind, searchParams }: { kind: "giving" | "
   const config = CONFIG[kind];
   const isGiving = kind === "giving";
   const canManage = can(access, "finance.manage");
-  const { params, page, from } = parseListParams(await searchParams);
+  const { params, page, from, pageSize } = await getListParams(await searchParams);
 
   const supabase = await createClient();
   // The same filters go on two differently-typed queries (the list and the
@@ -111,7 +114,7 @@ export async function FinanceLedger({ kind, searchParams }: { kind: "giving" | "
     applyFilters(supabase.from(config.view).select("*", { count: "exact" }))
       .order(config.dateColumn, { ascending: false })
       .order("created_at", { ascending: false })
-      .range(from, from + PAGE_SIZE - 1),
+      .range(from, from + pageSize - 1),
     // Total of everything matching the filters, not just this page.
     applyFilters(supabase.from(config.table).select("amount")).limit(20000),
     getCategoryOptions(config.categories),
@@ -213,7 +216,7 @@ export async function FinanceLedger({ kind, searchParams }: { kind: "giving" | "
   ) : null;
 
   const actions = (row: LedgerRow) =>
-    canManage || row.proof_path ? (
+    canManage || row.proof_path || row.collection_id ? (
       <div className="flex items-center justify-end gap-1">
         {row.proof_path ? (
           <a
@@ -227,7 +230,17 @@ export async function FinanceLedger({ kind, searchParams }: { kind: "giving" | "
             <Paperclip />
           </a>
         ) : null}
-        {canManage ? (
+        {row.collection_id ? (
+          // Posted from a collection: it is changed there (by voiding), not one entry at a time.
+          <Link
+            href={`/finance/giving/collections/${row.collection_id}`}
+            className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+            aria-label={`Open collection ${row.collection_name ?? ""}`}
+            title={`Part of ${row.collection_name ?? "a collection"}`}
+          >
+            <Layers />
+          </Link>
+        ) : canManage ? (
           <>
         <EntityDialog
           title={isGiving ? "Giving record" : "Expense"}
@@ -273,7 +286,17 @@ export async function FinanceLedger({ kind, searchParams }: { kind: "giving" | "
             <Link href="/finance/transfers" className={buttonVariants({ variant: "outline" })}>
               Transfers
             </Link>
+            {isGiving ? (
+              <Link href="/finance/giving/collections" className={buttonVariants({ variant: "outline" })}>
+                <Layers /> Collections
+              </Link>
+            ) : null}
             {createButton}
+            {isGiving && canManage ? (
+              <Link href="/finance/giving/collections/new" className={buttonVariants()}>
+                <Plus /> New collection
+              </Link>
+            ) : null}
           </>
         }
       />
@@ -310,7 +333,7 @@ export async function FinanceLedger({ kind, searchParams }: { kind: "giving" | "
             <span className="font-semibold text-foreground tabular-nums">{money(filteredTotal)}</span>
           </p>
 
-          <ul className="space-y-2 md:hidden">
+          <ul data-reveal-list="" className="space-y-2 md:hidden">
             {rows.map((row) => (
               <li key={row.id} className="flex items-start justify-between gap-3 rounded-xl border bg-card p-3">
                 <div className="min-w-0">
@@ -348,7 +371,10 @@ export async function FinanceLedger({ kind, searchParams }: { kind: "giving" | "
                 {rows.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell className="whitespace-nowrap">{dateOf(row)}</TableCell>
-                    <TableCell>{row.category_name}</TableCell>
+                    <TableCell>
+                      {row.category_name}
+                      {row.collection_name ? <span className="block text-xs text-muted-foreground">{row.collection_name}</span> : null}
+                    </TableCell>
                     {isGiving ? null : <TableCell className="whitespace-normal">{row.description}</TableCell>}
                     {isGiving ? null : <TableCell>{row.payee ?? "—"}</TableCell>}
                     {trackDonors ? <TableCell>{row.donor_name ?? "—"}</TableCell> : null}
@@ -363,7 +389,7 @@ export async function FinanceLedger({ kind, searchParams }: { kind: "giving" | "
               </TableBody>
             </Table>
           </div>
-          <Pagination params={params} page={page} pageSize={PAGE_SIZE} total={list.count ?? 0} />
+          <Pagination params={params} page={page} pageSize={pageSize} total={list.count ?? 0} />
         </>
       )}
     </>

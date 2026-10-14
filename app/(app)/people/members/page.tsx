@@ -12,7 +12,7 @@ import { PersonAvatar, StatusPill } from "@/components/shared/person-avatar";
 import { EmptyState, LoadError, NoAccess, PageHeader, PageSkeleton } from "@/components/shared/states";
 import { can, P } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
-import { getChurchSettings, getLookup, PAGE_SIZE, parseListParams, signPhotoUrls } from "@/lib/data/common";
+import { getChurchSettings, getLookup, getListParams, signPhotoUrls } from "@/lib/data/common";
 import { getCellGroupOptions, listPeople } from "@/lib/data/people";
 import { formatDate, titleCase } from "@/lib/format";
 import type { Person } from "@/lib/types";
@@ -30,7 +30,7 @@ async function MembersContent({ searchParams }: Pick<PageProps<"/people/members"
     return <NoAccess />;
   }
 
-  const { params, page, from } = parseListParams(await searchParams);
+  const { params, page, from, pageSize } = await getListParams(await searchParams);
   const [list, groups, ministries, statuses, stages, settings] = await Promise.all([
     listPeople("member", params, from),
     getCellGroupOptions(),
@@ -153,7 +153,7 @@ async function MembersContent({ searchParams }: Pick<PageProps<"/people/members"
       ) : (
         <>
           {/* Phones and small tablets: one card per member. */}
-          <ul className="space-y-2 lg:hidden">
+          <ul data-reveal-list="" className="space-y-2 lg:hidden">
             {list.rows.map((person) => (
               <li key={person.id} className="rounded-xl border bg-card p-3">
                 <div className="flex items-start gap-3">
@@ -232,7 +232,7 @@ async function MembersContent({ searchParams }: Pick<PageProps<"/people/members"
             </Table>
           </div>
 
-          <Pagination params={params} page={page} pageSize={PAGE_SIZE} total={list.total} />
+          <Pagination params={params} page={page} pageSize={pageSize} total={list.total} />
         </>
       )}
     </>

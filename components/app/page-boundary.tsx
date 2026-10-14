@@ -64,24 +64,30 @@ export function PageBoundary({ fallback, children }: { fallback: ReactNode; chil
   const enabled = Boolean(userId) && pathname === ownPath;
   const key = `${userId}|${pathname}?${search}`;
   const previous = enabled ? visited.get(key) : undefined;
+  // Decided once: a page that was already remembered when it opened is shown
+  // as it was, without replaying its entrance animations.
+  const [instant] = useState(Boolean(previous));
 
   return (
     <Suspense
       fallback={
         previous ? (
-          <div aria-busy="true">
+          <div aria-busy="true" data-page="" data-reveal-instant="" className="page-enter">
             <Refreshing />
             {previous}
           </div>
         ) : (
-          <>
+          <div className="page-enter">
             <Refreshing />
             {fallback}
-          </>
+          </div>
         )
       }
     >
-      {children}
+      {/* data-page marks the changing part of the screen; the shell around it never animates. */}
+      <div data-page="" data-reveal-instant={instant ? "" : undefined}>
+        {children}
+      </div>
       {enabled ? <Remember cacheKey={key} content={children} /> : null}
     </Suspense>
   );

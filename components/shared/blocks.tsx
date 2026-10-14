@@ -4,9 +4,9 @@ import { ArrowLeft } from "lucide-react";
 
 export function StatTile({ label, value, note }: { label: string; value: string | number; note?: string }) {
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-xs">
+    <div data-reveal="" className="h-full rounded-xl border bg-card p-3 shadow-xs sm:p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+      <p className="mt-1 truncate text-lg font-semibold tabular-nums sm:text-2xl">{value}</p>
       {note ? <p className="mt-1 text-xs text-muted-foreground">{note}</p> : null}
     </div>
   );

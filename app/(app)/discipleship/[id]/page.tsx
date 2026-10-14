@@ -190,7 +190,7 @@ async function ProfileContent({ params }: Pick<PageProps<"/discipleship/[id]">, 
             {(milestones.data ?? []).length === 0 ? (
               <ListEmpty>No milestones recorded yet.</ListEmpty>
             ) : (
-              <ul className="divide-y">
+              <ul className="scroll-list divide-y">
                 {(milestones.data ?? []).map((milestone) => (
                   <li key={milestone.id} className="flex items-start gap-3 p-3">
                     <Flag className="mt-0.5 size-4 shrink-0 text-highlight" aria-hidden />
@@ -226,7 +226,7 @@ async function ProfileContent({ params }: Pick<PageProps<"/discipleship/[id]">, 
             {(mentors.data ?? []).length === 0 ? (
               <ListEmpty>No mentor has been assigned.</ListEmpty>
             ) : (
-              <ul className="divide-y">
+              <ul className="scroll-list divide-y">
                 {(mentors.data ?? []).map((row) => {
                   const mentor = row.mentor as unknown as { full_name: string } | null;
                   return (

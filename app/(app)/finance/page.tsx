@@ -4,14 +4,15 @@ import { PageBoundary } from "@/components/app/page-boundary";
 import Link from "next/link";
 import { Bars, RankedBars, type ChartPoint } from "@/components/dashboard/charts";
 import { buttonVariants } from "@/components/ui/button";
+import { ArrowRightLeft, HandCoins, Receipt } from "lucide-react";
 import { money, StatTile } from "@/components/shared/blocks";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { DateFilter } from "@/components/shared/list-controls";
 import { LoadError, NoAccess, PageHeader, PageSkeleton } from "@/components/shared/states";
 import { can } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
-import { parseListParams } from "@/lib/data/common";
-import { formatMonth, titleCase } from "@/lib/format";
+import { getChurchSettings, parseListParams } from "@/lib/data/common";
+import { formatDate, formatMonth, titleCase } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { describeError } from "@/lib/errors";
 
@@ -78,6 +79,20 @@ async function FinanceContent({ searchParams }: Pick<PageProps<"/finance">, "sea
     value: Number(row.amount),
   }));
   const balances = (balancesResult.data ?? []) as { account_id: string; account_name: string; account_type: string; closing_balance: number }[];
+
+  // The latest money in and out, as one list.
+  const [recentGiving, recentExpenses, settings] = await Promise.all([
+    supabase.from("giving_details").select("id, giving_date, amount, category_name, payment_method_name").order("giving_date", { ascending: false }).order("created_at", { ascending: false }).limit(6),
+    supabase.from("expense_details").select("id, expense_date, amount, description, category_name, payment_method_name").order("expense_date", { ascending: false }).order("created_at", { ascending: false }).limit(6),
+    getChurchSettings(),
+  ]);
+  const recent = [
+    ...(recentGiving.data ?? []).map((row) => ({ key: `g${row.id}`, date: row.giving_date as string, title: row.category_name as string, method: row.payment_method_name as string | null, amount: Number(row.amount), income: true })),
+    ...(recentExpenses.data ?? []).map((row) => ({ key: `e${row.id}`, date: row.expense_date as string, title: (row.description || row.category_name) as string, method: row.payment_method_name as string | null, amount: Number(row.amount), income: false })),
+  ]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 8);
+  const canManage = can(access, "finance.manage");
   const stats = data as Stats | null;
   if (error || !stats) {
     console.error("finance_stats failed", describeError(error));
@@ -126,13 +141,56 @@ async function FinanceContent({ searchParams }: Pick<PageProps<"/finance">, "sea
         </FilterBar>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      {/* Phones: the three things done most often, one tap away. */}
+      {canManage ? (
+        <div className="mb-4 grid grid-cols-3 gap-2 md:hidden">
+          <Link href="/finance/giving?new=1" className={`${buttonVariants()} flex-col gap-1 px-1 text-xs max-md:h-16`}>
+            <HandCoins /> Giving
+          </Link>
+          <Link href="/finance/expenses?new=1" className={`${buttonVariants({ variant: "outline" })} flex-col gap-1 px-1 text-xs max-md:h-16`}>
+            <Receipt /> Expense
+          </Link>
+          <Link href="/finance/transfers?new=1" className={`${buttonVariants({ variant: "outline" })} flex-col gap-1 px-1 text-xs max-md:h-16`}>
+            <ArrowRightLeft /> Transfer
+          </Link>
+        </div>
+      ) : null}
+
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
         <StatTile label="Total giving" value={money(stats.total_giving)} note={period} />
         <StatTile label="Total expenses" value={money(stats.total_expenses)} note={period} />
         <StatTile label="Current balance" value={money(stats.balance)} note="All giving minus all expenses. Transfers do not change it." />
         <StatTile label="Giving this month" value={money(stats.giving_this_month)} />
         <StatTile label="Expenses this month" value={money(stats.expenses_this_month)} />
       </div>
+
+      <section className="mt-4 rounded-xl border bg-card shadow-xs">
+        <div className="flex items-center justify-between border-b p-4">
+          <h2 className="text-base font-semibold">Recent transactions</h2>
+          <Link href="/finance/giving" className="text-sm text-link hover:underline">
+            All giving
+          </Link>
+        </div>
+        {recent.length === 0 ? (
+          <p className="p-6 text-center text-sm text-muted-foreground">Nothing recorded yet.</p>
+        ) : (
+          <ul className="scroll-list divide-y">
+            {recent.map((row) => (
+              <li key={row.key} className="flex items-center justify-between gap-3 p-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{row.title}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {[row.method ?? "Method not recorded", formatDate(row.date, settings.date_format)].join(" · ")}
+                  </p>
+                </div>
+                <span className={`shrink-0 text-sm font-semibold tabular-nums ${row.income ? "text-success" : "text-foreground"}`}>
+                  {row.income ? "+" : "−"} {money(row.amount)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <ChartCard title="Giving trend" description="Giving received in each of the last 12 months." data={givingTrend} empty="No giving recorded yet.">
@@ -164,7 +222,7 @@ async function FinanceContent({ searchParams }: Pick<PageProps<"/finance">, "sea
           {balances.length === 0 ? (
             <p className="p-6 text-center text-sm text-muted-foreground">No accounts yet. Add them in Finance settings.</p>
           ) : (
-            <ul className="divide-y">
+            <ul className="scroll-list divide-y">
               {balances.map((account) => (
                 <li key={account.account_id} className="flex items-center justify-between gap-3 p-3 text-sm">
                   <span className="min-w-0">

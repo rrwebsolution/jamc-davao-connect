@@ -53,6 +53,35 @@ export async function removeBackground(source: Blob | string, tolerance: number)
   return new File([blob], "logo-transparent.png", { type: "image/png" });
 }
 
+/**
+ * Shrinks and re-encodes a photo for use as a full-screen background: at most
+ * `maxSide` pixels on its longer side, saved as WebP, and under `maxBytes`
+ * (quality is lowered step by step until it fits). A phone photo of several
+ * megabytes typically comes out at a few hundred kilobytes.
+ */
+export async function compressPhoto(source: Blob, maxSide = 2400, maxBytes = 1_900_000): Promise<File> {
+  const image = await loadImage(source);
+  let scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("This browser can't edit images.");
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    for (const quality of [0.82, 0.7, 0.58]) {
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", quality));
+      if (blob && blob.type === "image/webp" && blob.size <= maxBytes) {
+        return new File([blob], "background.webp", { type: "image/webp" });
+      }
+    }
+    // Still too large at the lowest quality: make it smaller and try again.
+    scale *= 0.75;
+  }
+  throw new Error("The image could not be made small enough.");
+}
+
 /** The pixel work, on raw RGBA data. Kept separate from the canvas so it can be tested. */
 export function clearBackground(data: Uint8ClampedArray, width: number, height: number, tolerance: number) {
   // Background colour: the average of the four corners.

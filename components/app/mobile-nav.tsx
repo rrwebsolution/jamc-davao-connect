@@ -65,7 +65,7 @@ function SheetRow({ href, icon: Icon, children, onClick }: { href: string; icon:
 }
 
 /** Phone navigation: a fixed tab bar, with everything else behind "More". */
-export function BottomNav({ permissions }: { permissions: string[] }) {
+export function BottomNav({ permissions, badges = {} }: { permissions: string[]; badges?: Record<string, number> }) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const [pending, setPending] = useState<{ href: string; from: string } | null>(null);
@@ -78,6 +78,8 @@ export function BottomNav({ permissions }: { permissions: string[] }) {
     label: section.label,
     items: section.items.filter((item) => has(item.permissions, permissions)),
   })).filter((section) => section.items.length > 0);
+
+  const moreCount = Object.values(badges).reduce((sum, value) => sum + value, 0);
 
   const tabClass = (active: boolean) =>
     cn(
@@ -102,15 +104,16 @@ export function BottomNav({ permissions }: { permissions: string[] }) {
               className={tabClass(active)}
             >
               <span className={cn("flex h-7 w-14 items-center justify-center rounded-full transition-colors", active && "bg-primary/12")}>
-                <tab.icon className="size-5" aria-hidden />
+                <tab.icon className={cn("size-5 transition-transform duration-200", active && "scale-110")} aria-hidden />
               </span>
               {tab.label}
             </Link>
           );
         })}
         <button type="button" onClick={() => setMoreOpen(true)} aria-haspopup="dialog" className={tabClass(moreOpen || !activeTab)}>
-          <span className={cn("flex h-7 w-14 items-center justify-center rounded-full transition-colors", (moreOpen || !activeTab) && "bg-primary/12")}>
+          <span className={cn("relative flex h-7 w-14 items-center justify-center rounded-full transition-colors", (moreOpen || !activeTab) && "bg-primary/12")}>
             <Menu className="size-5" aria-hidden />
+            {moreCount > 0 ? <span className="absolute right-2 top-0.5 size-2 rounded-full bg-highlight" aria-label={`${moreCount} waiting`} /> : null}
           </span>
           More
         </button>
@@ -131,6 +134,11 @@ export function BottomNav({ permissions }: { permissions: string[] }) {
                 {section.items.map((item) => (
                   <SheetRow key={item.href} href={item.href} icon={item.icon} onClick={() => setMoreOpen(false)}>
                     {item.title}
+                    {badges[item.href] ? (
+                      <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-highlight px-1.5 text-[11px] font-semibold text-highlight-foreground">
+                        {badges[item.href]}
+                      </span>
+                    ) : null}
                   </SheetRow>
                 ))}
               </div>

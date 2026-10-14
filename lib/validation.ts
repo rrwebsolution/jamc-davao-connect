@@ -1,5 +1,7 @@
 import { z } from "zod";
-import { HEX_COLOR } from "@/lib/theme";
+import { BACKGROUND_LIMITS, BACKGROUND_POSITION_VALUES, BACKGROUND_SIZE_VALUES } from "@/lib/background";
+import { HEX_COLOR, LOGIN_CONTENT_LIMITS } from "@/lib/theme";
+import { BASE_SIZE, BODY_WEIGHTS, FONT_KEYS, HEADING_WEIGHTS, SIZE_FIELDS, type SizeKey } from "@/lib/typography";
 
 // Shared by the forms (client) and the Server Actions (server). The database
 // constraints and RLS remain the last line of defence.
@@ -64,6 +66,31 @@ export const passwordSchema = z
     message: "The passwords don't match",
   });
 
+export const signUpSchema = z
+  .object({
+    first_name: z.string().trim().min(1, "First name is required").max(80),
+    middle_name: optionalText(80),
+    last_name: z.string().trim().min(1, "Last name is required").max(80),
+    email: z.string().trim().email("Enter a valid email address"),
+    mobile_number: z.string().trim().min(7, "Enter your mobile number").max(40),
+    password: z.string().min(8, "Use at least 8 characters").max(72, "Use at most 72 characters"),
+    confirm: z.string(),
+    is_existing_member: z.boolean(),
+    member_hint: optionalText(500),
+  })
+  .refine((value) => value.password === value.confirm, { path: ["confirm"], message: "The passwords don't match" });
+
+export const approvalSchema = z
+  .object({
+    role_id: z.string().uuid("Choose a role"),
+    member_action: z.enum(["none", "link", "create"]),
+    link_person_id: optionalUuid,
+  })
+  .refine((value) => value.member_action !== "link" || value.link_person_id !== null, {
+    path: ["link_person_id"],
+    message: "Choose the member record to link",
+  });
+
 // --- People -----------------------------------------------------------------
 
 const personBase = {
@@ -99,6 +126,12 @@ export const memberSchema = z.object({
 export const visitorSchema = z.object({
   ...personBase,
   first_visit_date: requiredDate,
+  // A member from the list, or "other" with a typed name for someone who is not a member.
+  invited_by_person_id: z
+    .union([z.literal(""), z.literal("other"), z.string().uuid()])
+    .nullable()
+    .optional()
+    .transform((value) => (value && value !== "other" ? value : null)),
   invited_by_name: optionalText(120),
   attendance_type_id: optionalUuid,
   prayer_request: optionalText(1000),
@@ -146,6 +179,7 @@ export const generalSettingsSchema = z.object({
   email: optionalEmail,
   timezone: z.string().trim().min(1).max(60),
   date_format: z.enum(["MMM d, yyyy", "MM/dd/yyyy", "dd/MM/yyyy", "yyyy-MM-dd"]),
+  rows_per_page: z.coerce.number().refine((value) => [10, 20, 25, 50, 100].includes(value), "Choose how many rows to show per page"),
 });
 
 export const membershipSettingsSchema = z.object({
@@ -158,6 +192,15 @@ export const attendanceSettingsSchema = z.object({
 });
 
 const hex = z.string().regex(HEX_COLOR, "Use a 6-digit HEX colour, like #7C2D12");
+
+const percent = (limit: { min: number; max: number }) => z.coerce.number().int().min(limit.min).max(limit.max);
+
+const fontSize = (field: { label: string; min: number; max: number }) =>
+  z.coerce
+    .number()
+    .int()
+    .min(field.min, `${field.label} must be at least ${field.min}px`)
+    .max(field.max, `${field.label} must be at most ${field.max}px`);
 
 export const appearanceSchema = z.object({
   system_name: z.string().trim().min(1, "System name is required").max(80),
@@ -183,6 +226,40 @@ export const appearanceSchema = z.object({
   link_color: hex,
   default_theme: z.enum(["light", "dark", "system"]),
   allow_user_theme_override: z.boolean(),
+  // System background image (separate from the login background).
+  system_background_path: optionalText(300),
+  system_background_enabled: z.boolean(),
+  background_size: z.enum(BACKGROUND_SIZE_VALUES),
+  background_position: z.enum(BACKGROUND_POSITION_VALUES),
+  background_overlay_enabled: z.boolean(),
+  background_overlay_color_light: hex,
+  background_overlay_color_dark: hex,
+  background_overlay_opacity_light: percent(BACKGROUND_LIMITS.background_overlay_opacity_light),
+  background_overlay_opacity_dark: percent(BACKGROUND_LIMITS.background_overlay_opacity_dark),
+  background_blur: percent(BACKGROUND_LIMITS.background_blur),
+  background_brightness: percent(BACKGROUND_LIMITS.background_brightness),
+  card_background_style: z.enum(["solid", "translucent"]),
+  sidebar_opacity: percent(BACKGROUND_LIMITS.sidebar_opacity),
+  navbar_opacity: percent(BACKGROUND_LIMITS.navbar_opacity),
+  // Motion & animation.
+  animations_enabled: z.boolean(),
+  animation_level: z.enum(["off", "subtle", "normal"]),
+  scroll_reveal_enabled: z.boolean(),
+  // Login page content. Empty is allowed: an empty part is simply not shown.
+  login_welcome_message: z.string().trim().max(LOGIN_CONTENT_LIMITS.login_welcome_message, "The welcome message is too long"),
+  show_login_welcome_message: z.boolean(),
+  login_bible_verse: z.string().trim().max(LOGIN_CONTENT_LIMITS.login_bible_verse, "The Bible verse is too long"),
+  login_bible_verse_reference: z.string().trim().max(LOGIN_CONTENT_LIMITS.login_bible_verse_reference, "The verse reference is too long"),
+  show_login_bible_verse: z.boolean(),
+  // Typography: fonts from the fixed list only, sizes within readable limits.
+  primary_font: z.enum(FONT_KEYS),
+  heading_font: z.enum(["same", ...FONT_KEYS]),
+  base_font_size: z.coerce.number().int().min(BASE_SIZE.min, "The base font size is too small").max(BASE_SIZE.max, "The base font size is too large"),
+  body_font_weight: z.coerce.number().refine((value) => (BODY_WEIGHTS as readonly number[]).includes(value), "Choose a body font weight"),
+  heading_font_weight: z.coerce.number().refine((value) => (HEADING_WEIGHTS as readonly number[]).includes(value), "Choose a heading weight"),
+  heading_scale: z.enum(["compact", "normal", "large"]),
+  mobile_font_scale: z.enum(["compact", "normal", "comfortable"]),
+  ...(Object.fromEntries(SIZE_FIELDS.map((field) => [field.key, fontSize(field)])) as unknown as Record<SizeKey, ReturnType<typeof fontSize>>),
 });
 
 export const lookupSchema = z.object({
@@ -194,12 +271,18 @@ export const lookupSchema = z.object({
 
 // --- Users & roles ----------------------------------------------------------
 
-export const newUserSchema = z.object({
-  full_name: z.string().trim().min(1, "Name is required").max(120),
-  email: z.string().trim().email("Enter a valid email address"),
-  password: z.string().min(8, "Use at least 8 characters").max(72),
+// An account is always made for a member, so the name and contact details
+// come from the member record; only the login details are asked for.
+export const memberAccountSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid login email"),
+  // "invite" emails a link to set a password; "password" sets a temporary one here.
+  method: z.enum(["invite", "password"]).default("invite"),
+  password: z.string().max(72).optional().default(""),
   role_id: z.string().uuid("Choose a role"),
-  person_id: optionalUuid,
+});
+
+export const loginEmailSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid login email"),
 });
 
 export const roleSchema = z.object({

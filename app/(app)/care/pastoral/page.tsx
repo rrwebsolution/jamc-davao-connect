@@ -12,7 +12,7 @@ import { StatusPill } from "@/components/shared/person-avatar";
 import { EmptyState, LoadError, NoAccess, PageHeader, PageSkeleton } from "@/components/shared/states";
 import { can } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
-import { cleanSearchTerm, getChurchSettings, getChurchToday, isUuid, PAGE_SIZE, parseListParams } from "@/lib/data/common";
+import { cleanSearchTerm, getChurchSettings, getChurchToday, isUuid, getListParams } from "@/lib/data/common";
 import { CARE_TYPES, CONFIDENTIALITY, getPeopleOptions, getUserOptions, labelOf } from "@/lib/data/options";
 import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -40,7 +40,7 @@ const TONE = { care_team: "neutral", selected_leaders: "warning", pastor_only: "
 
 async function PastoralContent({ searchParams }: Pick<PageProps<"/care/pastoral">, "searchParams">) {
   const access = await requireAccess();
-  const { params, page, from } = parseListParams(await searchParams);
+  const { params, page, from, pageSize } = await getListParams(await searchParams);
   const canManage = can(access, "care.manage");
   const canConfidential = can(access, "care.confidential");
 
@@ -56,7 +56,7 @@ async function PastoralContent({ searchParams }: Pick<PageProps<"/care/pastoral"
   if (term) query = query.or(`person_name.ilike.%${term}%,summary.ilike.%${term}%`);
 
   const [list, people, users, settings, today] = await Promise.all([
-    query.order("care_date", { ascending: false }).order("created_at", { ascending: false }).range(from, from + PAGE_SIZE - 1),
+    query.order("care_date", { ascending: false }).order("created_at", { ascending: false }).range(from, from + pageSize - 1),
     canManage ? getPeopleOptions() : [],
     canManage ? getUserOptions() : [],
     getChurchSettings(),
@@ -239,7 +239,7 @@ async function PastoralContent({ searchParams }: Pick<PageProps<"/care/pastoral"
               );
             })}
           </ul>
-          <Pagination params={params} page={page} pageSize={PAGE_SIZE} total={list.count ?? 0} />
+          <Pagination params={params} page={page} pageSize={pageSize} total={list.count ?? 0} />
         </>
       )}
     </>

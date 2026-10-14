@@ -161,5 +161,11 @@ export async function FollowUpList({
   const { data } = await query.order("due_date", { ascending: true, nullsFirst: false }).limit(50);
   const rows = (data ?? []) as FollowUpRow[];
 
-  return rows.length === 0 ? <ListEmpty>{empty}</ListEmpty> : <FollowUpRows rows={rows} dateFormat={dateFormat} />;
+  return rows.length === 0 ? (
+    <ListEmpty>{empty}</ListEmpty>
+  ) : (
+    <div className="scroll-list">
+      <FollowUpRows rows={rows} dateFormat={dateFormat} />
+    </div>
+  );
 }

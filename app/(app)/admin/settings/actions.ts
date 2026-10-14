@@ -7,7 +7,9 @@ import { BRANDING_TAG } from "@/lib/branding";
 import { isUuid, type LookupTable } from "@/lib/data/common";
 import { fail, INVALID_INPUT, NOT_ALLOWED } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
-import { DEFAULT_COLORS } from "@/lib/theme";
+import { BACKGROUND_RESET } from "@/lib/background";
+import { DEFAULT_COLORS, DEFAULT_LOGIN_CONTENT } from "@/lib/theme";
+import { DEFAULT_TYPOGRAPHY } from "@/lib/typography";
 import type { ActionResult } from "@/lib/types";
 import {
   appearanceSchema,
@@ -66,7 +68,7 @@ export async function saveAttendanceSettings(input: unknown): Promise<ActionResu
 
 // --- Branding & appearance ---------------------------------------------------
 
-const ASSET_FIELDS = ["logo_path", "login_logo_path", "login_logo_dark_path", "favicon_path", "login_background_path"] as const;
+const ASSET_FIELDS = ["logo_path", "login_logo_path", "login_logo_dark_path", "favicon_path", "login_background_path", "system_background_path"] as const;
 
 export async function saveAppearance(input: unknown): Promise<ActionResult> {
   const access = await getAccessWith(P.appearanceManage);
@@ -109,6 +111,70 @@ export async function resetAppearance(): Promise<ActionResult> {
   const { data, error } = await supabase
     .from("system_appearance_settings")
     .update({ ...DEFAULT_COLORS, default_theme: "light", allow_user_theme_override: true, updated_by: access.userId })
+    .eq("id", true)
+    .select("id")
+    .maybeSingle();
+  if (error) return fail(error);
+  if (!data) return NOT_ALLOWED;
+
+  updateTag(BRANDING_TAG);
+  refresh();
+  return { ok: true };
+}
+
+/**
+ * Puts the system background settings back to the defaults (switched off,
+ * default overlay, no blur). The uploaded picture is kept, so it can be
+ * switched on again; removing it is a separate, explicit action.
+ */
+export async function resetBackground(): Promise<ActionResult> {
+  const access = await getAccessWith(P.appearanceManage);
+  if (!access) return NOT_ALLOWED;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("system_appearance_settings")
+    .update({ ...BACKGROUND_RESET, updated_by: access.userId })
+    .eq("id", true)
+    .select("id")
+    .maybeSingle();
+  if (error) return fail(error);
+  if (!data) return NOT_ALLOWED;
+
+  updateTag(BRANDING_TAG);
+  refresh();
+  return { ok: true };
+}
+
+/** Puts the login page's welcome message and Bible verse back to the original text, both shown. */
+export async function resetLoginContent(): Promise<ActionResult> {
+  const access = await getAccessWith(P.appearanceManage);
+  if (!access) return NOT_ALLOWED;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("system_appearance_settings")
+    .update({ ...DEFAULT_LOGIN_CONTENT, updated_by: access.userId })
+    .eq("id", true)
+    .select("id")
+    .maybeSingle();
+  if (error) return fail(error);
+  if (!data) return NOT_ALLOWED;
+
+  updateTag(BRANDING_TAG);
+  refresh();
+  return { ok: true };
+}
+
+/** Puts fonts, weights and sizes back to the defaults. Colours, names and images are kept. */
+export async function resetTypography(): Promise<ActionResult> {
+  const access = await getAccessWith(P.appearanceManage);
+  if (!access) return NOT_ALLOWED;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("system_appearance_settings")
+    .update({ ...DEFAULT_TYPOGRAPHY, updated_by: access.userId })
     .eq("id", true)
     .select("id")
     .maybeSingle();
