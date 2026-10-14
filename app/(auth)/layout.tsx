@@ -72,7 +72,7 @@ export default async function AuthLayout({ children }: LayoutProps<"/">) {
     );
 
   return (
-    <div className="grid min-h-dvh w-full lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)]">
+    <div className="grid grid-cols-1 min-h-dvh w-full lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)]">
       {/* Desktop: the welcome side. It stays in view while a long form scrolls. */}
       <aside className={`relative hidden lg:block ${panel}`}>
         <div className="sticky top-0 flex h-dvh flex-col overflow-hidden">

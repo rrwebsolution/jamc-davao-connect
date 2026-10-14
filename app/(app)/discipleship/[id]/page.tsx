@@ -96,7 +96,7 @@ async function ProfileContent({ params }: Pick<PageProps<"/discipleship/[id]">, 
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
         <Panel
           title="Growth path"
           description="Earlier stages are kept when a member moves on."

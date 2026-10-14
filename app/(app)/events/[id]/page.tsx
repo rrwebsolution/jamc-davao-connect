@@ -64,7 +64,7 @@ async function EventContent({ params }: Pick<PageProps<"/events/[id]">, "params"
             <StatusPill tone={EVENT_TONE[event.status]}>{labelOf(EVENT_STATUSES, event.status)}</StatusPill>
           </div>
           {event.description ? <p className="mt-2 max-w-2xl whitespace-pre-line text-sm text-muted-foreground">{event.description}</p> : null}
-          <dl className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Detail label="Date">{formatDate(event.event_date, settings.date_format)}</Detail>
             <Detail label="Time">{[formatTime(event.start_time), formatTime(event.end_time)].filter(Boolean).join(" – ")}</Detail>
             <Detail label="Venue">{event.venue}</Detail>

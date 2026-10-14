@@ -58,7 +58,7 @@
 }
 
 /*
- * Brand variables. The root layout overrides these inline on <html> with the
+ * Brand variables. The root layout overrides them inline on <html> with the
  * colours saved in Appearance settings; the values here are the defaults.
  */
 :root {

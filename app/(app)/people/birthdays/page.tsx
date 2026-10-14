@@ -57,7 +57,7 @@ async function BirthdaysContent({ searchParams }: Pick<PageProps<"/people/birthd
       ) : rows.length === 0 ? (
         <EmptyState icon={Cake} title={`No birthdays in the next ${days} days.`} description="Birthdays come from the birthdate on each member's profile." />
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map((row) => (
             <li key={row.id} className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-xs">
               <PersonAvatar name={row.full_name} src={row.photo_path ? photos[row.photo_path] : null} className="size-11" />

@@ -150,7 +150,7 @@ export async function PersonProfilePage({
 
   const personal = (
     <Panel title="Personal information">
-      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Detail label="First name">{person.first_name}</Detail>
         <Detail label="Middle name">{person.middle_name}</Detail>
         <Detail label="Last name">{person.last_name}</Detail>
@@ -169,7 +169,7 @@ export async function PersonProfilePage({
 
   const visit = person.first_visit_date ? (
     <Panel title={isMember ? "First visit (before membership)" : "Visit details"}>
-      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Detail label="First visit date">{date(person.first_visit_date)}</Detail>
         <Detail label="Service attended">{person.service_attended}</Detail>
         <Detail label="Invited by">
@@ -196,7 +196,7 @@ export async function PersonProfilePage({
 
   const church = (
     <Panel title="Church information">
-      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Detail label="Date first attended">{date(person.date_first_attended)}</Detail>
         <Detail label="Membership date">{date(person.membership_date)}</Detail>
         <Detail label="Membership status">{person.membership_status_name}</Detail>
@@ -327,7 +327,7 @@ export async function PersonProfilePage({
         {isMember ? (
           <TabsContent value="discipleship">
             <Panel title="Discipleship">
-              <dl className="grid gap-4 sm:grid-cols-2">
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Detail label="Current stage">{person.discipleship_stage_name}</Detail>
                 <Detail label="Mentor">{person.mentor_name}</Detail>
               </dl>

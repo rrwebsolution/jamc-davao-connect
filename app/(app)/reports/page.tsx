@@ -23,7 +23,7 @@ async function ReportsContent() {
       {available.length === 0 ? (
         <EmptyState icon={BarChart3} title="No reports available to you." description="Reports follow your module permissions. Ask a Super Admin if you need access." />
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {available.map((report) => (
             <li key={report.slug}>
               <Link href={`/reports/${report.slug}`} className="flex h-full items-center gap-3 rounded-xl border bg-card p-4 shadow-xs transition-colors hover:border-ring">

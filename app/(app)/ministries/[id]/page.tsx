@@ -90,7 +90,7 @@ async function MinistryContent({ params }: Pick<PageProps<"/ministries/[id]">, "
             )}
           </div>
           {ministry.description ? <p className="mt-1 text-sm text-muted-foreground">{ministry.description}</p> : null}
-          <dl className="mt-4 grid gap-4 sm:grid-cols-3">
+          <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Detail label="Leader">{ministry.leader_name}</Detail>
             <Detail label="Assistant leader">{ministry.assistant_leader_name}</Detail>
             <Detail label="Members serving">{String(ministry.member_count)}</Detail>

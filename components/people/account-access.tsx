@@ -153,7 +153,7 @@ export async function AccountAccess({
         <StatusPill tone={status.tone}>{status.label}</StatusPill>
         {awaitingInvite && approved ? <StatusPill tone="warning">Invitation not accepted yet</StatusPill> : null}
       </div>
-      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Detail label="Login email">{account.email}</Detail>
         <Detail label="Role">{account.role_names.join(", ") || "No role"}</Detail>
         <Detail label="Last login">{account.last_sign_in_at ? formatDateTime(account.last_sign_in_at, timezone) : "Never"}</Detail>

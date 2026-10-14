@@ -77,7 +77,7 @@ export function RoleManager({ roles, permissions }: { roles: RoleRow[]; permissi
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
       <div>
         <ul className="space-y-2">
           {roles.map((item) => (

@@ -73,7 +73,7 @@ export function GeneralSettingsForm({ settings }: { settings: ChurchSettings }) 
   return (
     <form onSubmit={onSubmit} noValidate>
       <FormSection title="Church details" description="Shown on the login page, the dashboard and reports.">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Church name" htmlFor="church_name" required error={error("church_name")}>
             <Input id="church_name" {...register("church_name")} />
           </Field>
@@ -134,7 +134,7 @@ export function MembershipSettingsForm({ settings }: { settings: ChurchSettings 
         title="Member ID format"
         description="Applied to members added from now on. Existing member IDs are never changed."
       >
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="Prefix" htmlFor="member_id_prefix" error={error("member_id_prefix")}>
             <Input id="member_id_prefix" maxLength={12} {...form.register("member_id_prefix")} />
           </Field>
@@ -167,7 +167,7 @@ export function AttendanceSettingsForm({ settings }: { settings: ChurchSettings 
         title="Absence follow-up threshold"
         description="A member is flagged after this many consecutive absences from services that count toward the threshold (see Attendance types below)."
       >
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field
             label="Consecutive absences"
             htmlFor="absence_threshold"

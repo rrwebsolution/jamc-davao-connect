@@ -250,7 +250,7 @@ export function PersonForm({
           <p className="w-full text-xs text-muted-foreground">JPG, PNG or WebP, up to 2 MB.</p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="First name" htmlFor="first_name" required error={error("first_name")}>
             <Input id="first_name" aria-invalid={Boolean(error("first_name"))} {...register("first_name")} />
           </Field>
@@ -300,7 +300,7 @@ export function PersonForm({
 
       {mode === "member" ? (
         <FormSection title="Church information">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Date first attended" htmlFor="date_first_attended" error={error("date_first_attended")}>
               <Input id="date_first_attended" type="date" {...register("date_first_attended")} />
             </Field>
@@ -382,7 +382,7 @@ export function PersonForm({
         </FormSection>
       ) : (
         <FormSection title="Visit details">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="First visit date" htmlFor="first_visit_date" required error={error("first_visit_date")}>
               <Input id="first_visit_date" type="date" {...register("first_visit_date")} />
             </Field>
@@ -447,7 +447,7 @@ export function PersonForm({
             </span>
           </label>
           {withAccount ? (
-            <div className="mt-4 grid gap-4 border-t pt-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-2 lg:grid-cols-3">
               <Field label="Login email" htmlFor="account_email" hint="Leave empty to use the member's email above.">
                 <Input
                   id="account_email"

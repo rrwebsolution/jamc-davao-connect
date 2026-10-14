@@ -83,7 +83,7 @@ async function FollowUpsContent({ searchParams }: Pick<PageProps<"/care/follow-u
     <>
       <PageHeader title="Follow-ups" description="Calls, visits and messages that someone has promised to make." actions={createButton} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Link href="/care/follow-ups?due=overdue">
           <StatTile label="Overdue" value={overdue.count ?? 0} note="Past their due date" />
         </Link>

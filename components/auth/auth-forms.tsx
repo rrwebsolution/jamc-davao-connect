@@ -194,7 +194,7 @@ export function SignUpForm({ systemName }: { systemName: string }) {
           </div>
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="First Name" htmlFor="first_name" required error={errors.first_name?.message}>
             <Input id="first_name" autoComplete="given-name" disabled={pending} className={FIELD} {...form.register("first_name")} />
           </Field>

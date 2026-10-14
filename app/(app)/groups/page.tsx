@@ -108,7 +108,7 @@ async function GroupsContent({ searchParams }: Pick<PageProps<"/groups">, "searc
         />
       ) : (
         <>
-          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {rows.map((group) => (
               <li key={group.id}>
                 <Link href={`/groups/${group.id}`} className="block h-full rounded-xl border bg-card p-4 shadow-xs transition-colors hover:border-ring">

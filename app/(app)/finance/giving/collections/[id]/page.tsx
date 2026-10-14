@@ -156,7 +156,7 @@ async function Content({ params }: Pick<PageProps<"/finance/giving/collections/[
               {collection.void_reason ? ` Reason: ${collection.void_reason}` : ""}
             </p>
           ) : null}
-          <dl className="mt-4 grid gap-4 border-t pt-4 sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="mt-4 grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-2 lg:grid-cols-4">
             <Detail label="Entries">{String(collection.entry_count)}</Detail>
             <Detail label="Entry mode">{collection.entry_mode === "summary" ? "Summary" : "Detailed / individual"}</Detail>
             <Detail label="Recorded by">{collection.created_by_name}</Detail>
@@ -171,7 +171,7 @@ async function Content({ params }: Pick<PageProps<"/finance/giving/collections/[
           </dl>
         </section>
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {(
             [
               ["Payment breakdown", breakdown(entries, "payment_method_name")],

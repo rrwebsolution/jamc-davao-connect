@@ -141,7 +141,7 @@ async function GroupContent({ params }: Pick<PageProps<"/groups/[id]">, "params"
             )}
           </div>
           {group.description ? <p className="mt-1 text-sm text-muted-foreground">{group.description}</p> : null}
-          <dl className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Detail label="Leader">{group.leader_name}</Detail>
             <Detail label="Assistant leader">{group.assistant_leader_name}</Detail>
             <Detail label="Meets">
@@ -184,7 +184,7 @@ async function GroupContent({ params }: Pick<PageProps<"/groups/[id]">, "params"
         </div>
       </div>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Members" value={s.total_members ?? 0} note={`${s.new_members ?? 0} joined in the last 30 days`} />
         <StatTile
           label="Average attendance"

@@ -35,7 +35,7 @@ export async function AttendanceSummary({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Attendance rate" value={stats.attendance_rate === null ? "—" : `${stats.attendance_rate}%`} note={`${stats.total} sessions recorded`} />
         <Stat label="Total present" value={String(stats.present)} note={stats.last_attended ? `Last attended ${formatDate(stats.last_attended, dateFormat)}` : undefined} />
         <Stat label="Total absent" value={String(stats.absent)} />

@@ -329,7 +329,7 @@ async function DashboardContent() {
         ) : null}
       </div>
 
-      <div className="mt-4 grid gap-4 max-md:order-2 lg:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-4 max-md:order-2 lg:grid-cols-2">
         {seesAttendance ? (
           <ChartCard
             title="Attendance trend"
@@ -398,7 +398,7 @@ async function DashboardContent() {
         ) : null}
       </div>
 
-      <div className="mt-4 grid gap-4 max-md:order-1 lg:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-4 max-md:order-1 lg:grid-cols-2">
         {seesMembers ? (
           <ListCard title="Upcoming birthdays" href="/people/birthdays" linkLabel="View all">
             {birthdayRows.length === 0 ? (

@@ -58,7 +58,7 @@ async function ProfileContent() {
         {person ? (
           <>
             <FormSection title="My church record" description="Kept by the church office. Ask them to correct anything you can't change here.">
-              <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {[
                   ["Member ID", person.member_code],
                   ["Membership status", person.membership_status_name],

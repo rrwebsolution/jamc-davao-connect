@@ -50,7 +50,7 @@ export function DemoDataPanel({ summary }: { summary: DemoSummary }) {
         </p>
       ) : (
         <>
-          <dl className="grid gap-3 sm:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {LABELS.map(([key, label]) => (
               <div key={key} className="rounded-lg border p-3">
                 <dt className="text-xs text-muted-foreground">{label}</dt>

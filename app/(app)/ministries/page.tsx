@@ -120,7 +120,7 @@ async function MinistriesContent({ searchParams }: Pick<PageProps<"/ministries">
         />
       ) : (
         <>
-          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {rows.map((ministry) => (
               <li key={ministry.id}>
                 <Link href={`/ministries/${ministry.id}`} className="block h-full rounded-xl border bg-card p-4 shadow-xs transition-colors hover:border-ring">

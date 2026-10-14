@@ -189,7 +189,7 @@ export function EntityDialog({
           </DialogHeader>
           <form onSubmit={submit} noValidate>
             {header}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {visible.map((field) => {
                 const id = `field-${field.name}`;
                 const value = values[field.name];

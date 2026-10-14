@@ -38,7 +38,7 @@ export function MotionSection({ values, set }: { values: MotionSettings; set: Se
   const [run, setRun] = useState(0);
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
       <FormSection title="Motion & animation" description="How much the interface moves. Animations never delay navigation or loading, and are skipped on devices set to reduce motion.">
         <div className="space-y-4">
           <Toggle

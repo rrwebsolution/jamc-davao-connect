@@ -303,7 +303,7 @@ export function AppearanceForm({
   return (
     <div className="space-y-4">
       <FormSection title="Branding" description="Names and images used across the system and on the login page.">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="System name" htmlFor="system_name" required>
             <Input id="system_name" maxLength={80} value={values.system_name} onChange={(e) => set("system_name", e.target.value)} />
           </Field>
@@ -316,7 +316,7 @@ export function AppearanceForm({
         </div>
         <p className="mt-3 text-xs text-muted-foreground">The church name is edited under General.</p>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {ASSETS.map((asset) => {
             const current = previews[asset.key] ?? (values[asset.key] ? `${assetBaseUrl}/${values[asset.key]}` : null);
             const sizing = LOGO_SIZING[asset.key];
@@ -467,9 +467,9 @@ export function AppearanceForm({
         }}
       />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
         <FormSection title="Colours" description="Pick a colour or type a HEX value. The preview updates as you go; nothing is saved until you save.">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {COLOR_FIELDS.map((field) => {
               const value = values[field.key as ColorKey];
               const valid = HEX_COLOR.test(value);
@@ -507,7 +507,7 @@ export function AppearanceForm({
             })}
           </div>
 
-          <div className="mt-5 grid gap-4 border-t pt-5 sm:grid-cols-2">
+          <div className="mt-5 grid grid-cols-1 gap-4 border-t pt-5 sm:grid-cols-2">
             <Field label="Default theme" htmlFor="default_theme" hint="Custom colours apply to light mode; dark mode keeps the brand hues on dark surfaces.">
               <NativeSelect id="default_theme" value={values.default_theme} onChange={(e) => set("default_theme", e.target.value as Values["default_theme"])}>
                 <option value="light">Light</option>

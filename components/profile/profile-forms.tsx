@@ -32,7 +32,7 @@ export function AccountNameForm({ name, email }: { name: string; email: string }
 
   return (
     <form
-      className="grid gap-4 sm:grid-cols-2"
+      className="grid grid-cols-1 gap-4 sm:grid-cols-2"
       onSubmit={(event) => {
         event.preventDefault();
         save(() => updateProfileName({ full_name: value }), "Name updated");
@@ -63,7 +63,7 @@ export function OwnContactForm({ initial }: { initial: Contact }) {
 
   return (
     <form
-      className="grid gap-4 sm:grid-cols-2"
+      className="grid grid-cols-1 gap-4 sm:grid-cols-2"
       onSubmit={(event) => {
         event.preventDefault();
         save(() => updateOwnContact(values), "Your details were updated");

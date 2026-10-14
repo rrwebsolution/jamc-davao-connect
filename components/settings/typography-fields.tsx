@@ -186,9 +186,9 @@ export function TypographySection({
   );
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
       <FormSection title="Typography" description="Fonts, weights and text sizes for the whole system, including the login page. The preview updates as you go; nothing is saved until you save.">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Primary font" htmlFor="primary_font" hint="Body text, forms, tables, navigation and buttons.">
             <NativeSelect id="primary_font" value={values.primary_font} onChange={(event) => choosePrimary(event.target.value as Typography["primary_font"])}>
               {FONTS.map((font) => (
@@ -228,7 +228,7 @@ export function TypographySection({
           </Field>
         </div>
 
-        <div className="mt-5 grid gap-4 border-t pt-5 sm:grid-cols-2">
+        <div className="mt-5 grid grid-cols-1 gap-4 border-t pt-5 sm:grid-cols-2">
           <Field
             label="Base font size"
             htmlFor="base_font_size"
@@ -275,7 +275,7 @@ export function TypographySection({
           <p className="mt-1 text-xs text-muted-foreground">
             Sizes of individual text styles, set for the 16px base. They scale with the base size, the heading scale and the mobile scale.
           </p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">{SIZE_FIELDS.filter((field) => field.advanced).map(sizeField)}</div>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">{SIZE_FIELDS.filter((field) => field.advanced).map(sizeField)}</div>
         </details>
 
         <div className="mt-5 border-t pt-4">

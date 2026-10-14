@@ -383,7 +383,7 @@ export function CollectionEditor({
   return (
     <div ref={container} className="space-y-4">
       <FormSection title="Collection details">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Date" htmlFor="collection_date" required>
             <Input id="collection_date" type="date" value={date} onChange={(event) => changeDate(event.target.value)} />
           </Field>
@@ -416,7 +416,7 @@ export function CollectionEditor({
         <fieldset className="mt-5 border-t pt-4">
           <legend className="sr-only">Entry mode</legend>
           <p className="mb-2 text-sm font-medium">Entry mode</p>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {(
               [
                 { value: "summary", label: "Summary", hint: "Totals by category and payment method. The fastest way to record a service." },
@@ -438,7 +438,7 @@ export function CollectionEditor({
         </fieldset>
       </FormSection>
 
-      <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(0,19rem)]">
+      <div className="grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(0,19rem)]">
         <FormSection
           title={mode === "summary" ? "Summary entry" : "Giving entries"}
           description={
@@ -450,7 +450,7 @@ export function CollectionEditor({
           {mode === "summary" ? (
             <div style={summaryColumns} className="md:overflow-x-auto">
               {/* Where each payment method lands. Suggested from the method; changeable. */}
-              <div className="mb-4 grid gap-3 rounded-lg border bg-muted/40 p-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mb-4 grid grid-cols-1 gap-3 rounded-lg border bg-muted/40 p-3 sm:grid-cols-2 lg:grid-cols-3">
                 {methods.map((method) => (
                   <Field key={method.id} label={`${method.name} goes to`} htmlFor={`account-${method.id}`}>
                     <NativeSelect id={`account-${method.id}`} value={methodAccount[method.id] ?? ""} onChange={(event) => setMethodAccount((current) => ({ ...current, [method.id]: event.target.value }))}>

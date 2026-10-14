@@ -74,7 +74,7 @@ export function LoadError({ what = "this page" }: { what?: string }) {
 
 export function CardsSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {Array.from({ length: count }, (_, i) => (
         <div key={i} className="rounded-xl border bg-card p-4">
           <Skeleton className="h-4 w-24" />
@@ -115,7 +115,7 @@ export function FormSkeleton() {
       {Array.from({ length: 2 }, (_, s) => (
         <div key={s} className="rounded-xl border bg-card p-4 sm:p-6">
           <Skeleton className="h-5 w-40" />
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {Array.from({ length: 6 }, (_, i) => (
               <div key={i} className="space-y-2">
                 <Skeleton className="h-3 w-24" />
@@ -190,7 +190,7 @@ function CardGridSkeleton({ count = 6 }: { count?: number }) {
         <Skeleton className="h-8 w-full sm:w-72" />
         <Skeleton className="h-8 w-full sm:w-40" />
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: count }, (_, i) => (
           <div key={i} className="rounded-xl border bg-card p-4">
             <Skeleton className="h-5 w-2/3" />
@@ -216,11 +216,11 @@ const BODIES = {
   dashboard: () => (
     <div className="space-y-4">
       <StatsCardSkeleton count={4} />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartSkeleton />
         <ChartSkeleton />
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ListSkeleton rows={3} />
         <ListSkeleton rows={3} />
       </div>
@@ -229,7 +229,7 @@ const BODIES = {
   finance: () => (
     <div className="space-y-4">
       <StatsCardSkeleton count={5} />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartSkeleton />
         <ChartSkeleton />
       </div>

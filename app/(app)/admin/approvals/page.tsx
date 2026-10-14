@@ -130,7 +130,7 @@ async function ApprovalsContent({ searchParams }: Pick<PageProps<"/admin/approva
   ];
 
   const info = (applicant: Applicant) => (
-    <dl className="mb-4 grid gap-3 rounded-lg border bg-muted/40 p-3 sm:grid-cols-2">
+    <dl className="mb-4 grid grid-cols-1 gap-3 rounded-lg border bg-muted/40 p-3 sm:grid-cols-2">
       <Detail label="Name">{applicant.full_name}</Detail>
       <Detail label="Email">{applicant.email}</Detail>
       <Detail label="Mobile number">{applicant.mobile_number}</Detail>

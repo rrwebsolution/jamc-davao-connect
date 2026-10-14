@@ -64,7 +64,7 @@ export function LoginContentSection({
   const shown = visibleLoginContent(values);
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
       <FormSection title="Login page content" description="The welcome message and Bible verse shown beside the sign-in form. Hiding a part keeps its text for later.">
         <div className="space-y-4">
           <Field label="Welcome message" htmlFor="login_welcome_message">

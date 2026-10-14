@@ -192,7 +192,7 @@ async function FinanceContent({ searchParams }: Pick<PageProps<"/finance">, "sea
         )}
       </section>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard title="Giving trend" description="Giving received in each of the last 12 months." data={givingTrend} empty="No giving recorded yet.">
           <Bars data={givingTrend} unit="pesos" />
         </ChartCard>

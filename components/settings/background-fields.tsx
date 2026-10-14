@@ -249,7 +249,7 @@ export function BackgroundSection({
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
       <FormSection
         title="Background"
         description="A picture behind the application (Dashboard, Members and the rest). It stays still while pages scroll over it. The login page has its own background, set under Branding."
@@ -296,7 +296,7 @@ export function BackgroundSection({
           />
         </div>
 
-        <div className={`mt-5 grid gap-4 border-t pt-5 sm:grid-cols-2 ${off ? "opacity-60" : ""}`}>
+        <div className={`mt-5 grid grid-cols-1 gap-4 border-t pt-5 sm:grid-cols-2 ${off ? "opacity-60" : ""}`}>
           <Field label="Background size" htmlFor="background_size">
             <NativeSelect id="background_size" value={values.background_size} disabled={off} onChange={(event) => set("background_size", event.target.value as SystemBackgroundSettings["background_size"])}>
               {BACKGROUND_SIZES.map((option) => (
@@ -341,7 +341,7 @@ export function BackgroundSection({
             label="Background overlay"
             hint="A colour laid over the picture so text and cards stay readable. Recommended."
           />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-3 rounded-lg border p-3">
               <p className="text-sm font-medium">Light mode</p>
               <ColorField
@@ -388,7 +388,7 @@ export function BackgroundSection({
           ) : null}
         </div>
 
-        <div className={`mt-5 grid gap-4 border-t pt-5 sm:grid-cols-2 ${off ? "opacity-60" : ""}`}>
+        <div className={`mt-5 grid grid-cols-1 gap-4 border-t pt-5 sm:grid-cols-2 ${off ? "opacity-60" : ""}`}>
           <Field label="Card background style" htmlFor="card_background_style" hint="Dialogs and menus always stay solid." className="sm:col-span-2 sm:max-w-xs">
             <NativeSelect
               id="card_background_style"
