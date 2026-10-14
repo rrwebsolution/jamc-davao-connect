@@ -43,6 +43,10 @@ export function LoginForm({ systemName }: { systemName: string }) {
   const [error, setError] = useState<string | null>(
     searchParams.get("error") === "link" ? "That link is invalid or has expired. Please request a new one." : null,
   );
+  const notice =
+    searchParams.get("notice") === "confirmed"
+      ? "Your email address is confirmed. Sign in to continue. A church administrator still needs to approve new registrations."
+      : null;
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
@@ -90,6 +94,12 @@ export function LoginForm({ systemName }: { systemName: string }) {
           <div className="flex gap-2.5 rounded-lg border border-destructive/25 bg-destructive/8 px-3.5 py-3 text-sm text-destructive" role="alert">
             <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
             <p>{error}</p>
+          </div>
+        ) : null}
+        {notice && !error ? (
+          <div className="flex gap-2.5 rounded-lg border border-success/30 bg-success/10 px-3.5 py-3 text-sm" role="status">
+            <CircleCheck className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />
+            <p>{notice}</p>
           </div>
         ) : null}
 

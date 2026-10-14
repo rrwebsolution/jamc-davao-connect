@@ -17,13 +17,24 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   let ok = false;
 
-  if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    ok = !error;
-  } else if (tokenHash && type) {
-    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
-    ok = !error;
+  // A bad or expired link can make these throw rather than return an error.
+  try {
+    if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      ok = !error;
+    } else if (tokenHash && type) {
+      const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+      ok = !error;
+    }
+  } catch {
+    ok = false;
   }
 
+  if (!ok && code && next !== "/reset-password") {
+    // A sign-up link opened on another device (or browser) cannot sign in
+    // there, but Supabase has already confirmed the email address before
+    // handing out the code. Say so, rather than calling the link invalid.
+    return NextResponse.redirect(new URL("/login?notice=confirmed", origin));
+  }
   return NextResponse.redirect(new URL(ok ? next : "/login?error=link", origin));
 }
