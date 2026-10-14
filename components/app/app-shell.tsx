@@ -17,7 +17,15 @@ import { UserMenu } from "@/components/app/user-menu";
 import { NAV, PAGE_TITLES, type NavItem } from "@/lib/nav";
 
 export type ShellUser = { id: string; name: string; email: string; roleNames: string[] };
-export type ShellBrand = { name: string; shortName: string; logoUrl: string | null; logoSize: number };
+export type ShellBrand = {
+  name: string;
+  shortName: string;
+  /** The church logo, made for the dark sidebar. */
+  logoUrl: string | null;
+  /** The login page's light-mode logo (dark or full colour), if one was uploaded: readable on a light header. */
+  lightLogoUrl: string | null;
+  logoSize: number;
+};
 
 const COLLAPSE_KEY = "jamc-sidebar-collapsed";
 const COLLAPSE_EVENT = "jamc-sidebar-change";
@@ -194,9 +202,28 @@ function Breadcrumbs({ brand }: { brand: ShellBrand }) {
       {/* Phones, home screen: the app's own name and logo instead of "Dashboard". */}
       {isHome ? (
         <span className="flex min-w-0 items-center gap-2 md:hidden">
+          {/*
+            The church logo is made for the dark sidebar and would vanish on a
+            light header. In light mode: the light-mode logo if there is one,
+            otherwise the church logo on a small tile in the sidebar colour.
+          */}
+          {brand.lightLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={brand.lightLogoUrl} alt="" className="h-7 w-auto max-w-24 shrink-0 object-contain dark:hidden" />
+          ) : brand.logoUrl ? (
+            <span className="flex h-8 shrink-0 items-center rounded-md bg-sidebar px-1.5 dark:hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={brand.logoUrl} alt="" className="h-6 w-auto max-w-20 object-contain" />
+            </span>
+          ) : null}
           {brand.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={brand.logoUrl} alt="" className="h-7 w-auto max-w-24 shrink-0 object-contain" />
+            <img src={brand.logoUrl} alt="" className="hidden h-7 w-auto max-w-24 shrink-0 object-contain dark:block" />
+          ) : brand.lightLogoUrl ? (
+            <span className="hidden h-8 shrink-0 items-center rounded-md bg-white px-1.5 dark:flex">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={brand.lightLogoUrl} alt="" className="h-6 w-auto max-w-20 object-contain" />
+            </span>
           ) : null}
           <span className="truncate text-base font-semibold">{brand.shortName}</span>
         </span>

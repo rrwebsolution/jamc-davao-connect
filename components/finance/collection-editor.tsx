@@ -361,10 +361,10 @@ export function CollectionEditor({
   const noSetup = categories.length === 0 || methods.length === 0;
   // One grid template for the header row and every category row of the summary table.
   const summaryColumns = { "--methods": methods.length } as CSSProperties;
-  const summaryGrid = "md:grid md:grid-cols-[minmax(8rem,1.1fr)_repeat(var(--methods),minmax(6.5rem,1fr))_minmax(7rem,0.8fr)] md:items-center md:gap-2";
+  const summaryGrid = "md:grid md:grid-cols-[minmax(6.5rem,1.1fr)_repeat(var(--methods),minmax(4.75rem,1fr))_minmax(5.75rem,0.8fr)] md:items-center md:gap-2";
   const detailGrid = donors
-    ? "md:grid md:grid-cols-[minmax(9rem,1.3fr)_minmax(7rem,1fr)_minmax(7rem,1fr)_minmax(8rem,1.1fr)_minmax(6.5rem,0.8fr)_minmax(6.5rem,0.9fr)_2rem] md:items-center md:gap-2"
-    : "md:grid md:grid-cols-[minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(9rem,1.2fr)_minmax(7rem,0.8fr)_minmax(7rem,1fr)_2rem] md:items-center md:gap-2";
+    ? "md:grid md:grid-cols-[minmax(7rem,1.3fr)_minmax(5.5rem,1fr)_minmax(5.5rem,1fr)_minmax(6rem,1.1fr)_minmax(5rem,0.8fr)_minmax(5rem,0.9fr)_2rem] md:items-center md:gap-2"
+    : "md:grid md:grid-cols-[minmax(6rem,1fr)_minmax(6rem,1fr)_minmax(7rem,1.2fr)_minmax(5.5rem,0.8fr)_minmax(5.5rem,1fr)_2rem] md:items-center md:gap-2";
 
   if (noSetup) {
     return (
@@ -438,7 +438,7 @@ export function CollectionEditor({
         </fieldset>
       </FormSection>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,19rem)]">
+      <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(0,19rem)]">
         <FormSection
           title={mode === "summary" ? "Summary entry" : "Giving entries"}
           description={
@@ -448,7 +448,7 @@ export function CollectionEditor({
           }
         >
           {mode === "summary" ? (
-            <div style={summaryColumns}>
+            <div style={summaryColumns} className="md:overflow-x-auto">
               {/* Where each payment method lands. Suggested from the method; changeable. */}
               <div className="mb-4 grid gap-3 rounded-lg border bg-muted/40 p-3 sm:grid-cols-2 lg:grid-cols-3">
                 {methods.map((method) => (
@@ -662,7 +662,7 @@ export function CollectionEditor({
           </div>
         </FormSection>
 
-        <div className="xl:sticky xl:top-20 xl:self-start">
+        <div className="2xl:sticky 2xl:top-20 2xl:self-start">
           <FormSection title="Collection summary">
             <Breakdown title="By payment method" items={byMethod} />
             <Breakdown title="By category" items={byCategory} />
