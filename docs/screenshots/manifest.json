@@ -1,0 +1,375 @@
+{
+  "capturedAt": "2026-10-15T01:55:01.479Z",
+  "base": "http://localhost:3100",
+  "done": [
+    {
+      "file": "authentication/login.png",
+      "path": "/login",
+      "marks": [
+        "css:#email",
+        "css:#password",
+        "Remember my email",
+        "Sign In",
+        "Forgot password?",
+        "Create an account"
+      ]
+    },
+    {
+      "file": "authentication/sign-up.png",
+      "path": "/sign-up",
+      "marks": []
+    },
+    {
+      "file": "authentication/forgot-password.png",
+      "path": "/forgot-password",
+      "marks": []
+    },
+    {
+      "file": "mobile/login.png",
+      "path": "/login",
+      "marks": []
+    },
+    {
+      "file": "mobile/sign-up.png",
+      "path": "/sign-up",
+      "marks": []
+    },
+    {
+      "file": "dashboard/dashboard.png",
+      "path": "/dashboard",
+      "marks": []
+    },
+    {
+      "file": "dashboard/navigation.png",
+      "path": "/dashboard",
+      "marks": [
+        "Dashboard",
+        "Members",
+        "Services",
+        "Cell Groups",
+        "Follow-ups",
+        "Finance",
+        "Users"
+      ]
+    },
+    {
+      "file": "dashboard/command-palette.png",
+      "path": "/dashboard",
+      "marks": []
+    },
+    {
+      "file": "dashboard/notifications.png",
+      "path": "/dashboard",
+      "marks": []
+    },
+    {
+      "file": "members/members-list.png",
+      "path": "/people/members",
+      "marks": [
+        "Add member",
+        "css:input[placeholder^='Search name']",
+        "Status: All"
+      ]
+    },
+    {
+      "file": "members/add-member.png",
+      "path": "/people/members/new",
+      "marks": []
+    },
+    {
+      "file": "members/member-profile.png",
+      "path": "/people/members/ad238197-65da-42f0-a66e-5ed5fa3260ee",
+      "marks": []
+    },
+    {
+      "file": "members/member-attendance-tab.png",
+      "path": "/people/members/ad238197-65da-42f0-a66e-5ed5fa3260ee",
+      "marks": []
+    },
+    {
+      "file": "members/birthdays.png",
+      "path": "/people/birthdays",
+      "marks": []
+    },
+    {
+      "file": "visitors/visitors-list.png",
+      "path": "/people/visitors",
+      "marks": []
+    },
+    {
+      "file": "visitors/register-visitor.png",
+      "path": "/people/visitors/new",
+      "marks": []
+    },
+    {
+      "file": "visitors/visitor-profile.png",
+      "path": "/people/visitors/f595b67f-1a1f-481e-8d2a-0b85e1f96804",
+      "marks": []
+    },
+    {
+      "file": "attendance/services.png",
+      "path": "/attendance/services",
+      "marks": []
+    },
+    {
+      "file": "attendance/new-session.png",
+      "path": "/attendance/services?new=1",
+      "marks": []
+    },
+    {
+      "file": "attendance/record-attendance.png",
+      "path": "/attendance/services/ebf87349-3c59-43b9-a5ed-2c25e4c35825",
+      "marks": []
+    },
+    {
+      "file": "attendance/records.png",
+      "path": "/attendance/records",
+      "marks": []
+    },
+    {
+      "file": "attendance/history.png",
+      "path": "/attendance/history",
+      "marks": []
+    },
+    {
+      "file": "groups/cell-groups.png",
+      "path": "/groups",
+      "marks": []
+    },
+    {
+      "file": "groups/cell-group-details.png",
+      "path": "/groups/ad76f02b-4ec3-459e-86ac-89bb520e133f",
+      "marks": []
+    },
+    {
+      "file": "care/follow-ups.png",
+      "path": "/care/follow-ups",
+      "marks": []
+    },
+    {
+      "file": "care/new-follow-up.png",
+      "path": "/care/follow-ups?new=1",
+      "marks": []
+    },
+    {
+      "file": "care/new-care-record.png",
+      "path": "/care/pastoral?new=1",
+      "marks": []
+    },
+    {
+      "file": "discipleship/discipleship-list.png",
+      "path": "/discipleship",
+      "marks": []
+    },
+    {
+      "file": "discipleship/discipleship-profile.png",
+      "path": "/discipleship/ad238197-65da-42f0-a66e-5ed5fa3260ee",
+      "marks": []
+    },
+    {
+      "file": "ministries/ministries-list.png",
+      "path": "/ministries",
+      "marks": []
+    },
+    {
+      "file": "ministries/ministry-details.png",
+      "path": "/ministries/22ae2529-5eff-4dbc-8cd2-b747700bef18",
+      "marks": []
+    },
+    {
+      "file": "events/events-list.png",
+      "path": "/events",
+      "marks": []
+    },
+    {
+      "file": "events/events-calendar.png",
+      "path": "/events?view=calendar",
+      "marks": []
+    },
+    {
+      "file": "events/event-details.png",
+      "path": "/events/c279964e-f57e-463d-abdf-7bf6e693c840",
+      "marks": []
+    },
+    {
+      "file": "finance/finance-dashboard.png",
+      "path": "/finance",
+      "marks": []
+    },
+    {
+      "file": "finance/giving.png",
+      "path": "/finance/giving",
+      "marks": [
+        "Collections",
+        "Add giving",
+        "New collection"
+      ]
+    },
+    {
+      "file": "finance/add-giving.png",
+      "path": "/finance/giving?new=1",
+      "marks": []
+    },
+    {
+      "file": "finance/collections.png",
+      "path": "/finance/giving/collections",
+      "marks": []
+    },
+    {
+      "file": "finance/new-collection-summary.png",
+      "path": "/finance/giving/collections/new",
+      "marks": []
+    },
+    {
+      "file": "finance/new-collection-detailed.png",
+      "path": "/finance/giving/collections/new",
+      "marks": []
+    },
+    {
+      "file": "finance/expenses.png",
+      "path": "/finance/expenses",
+      "marks": []
+    },
+    {
+      "file": "finance/transfers.png",
+      "path": "/finance/transfers",
+      "marks": []
+    },
+    {
+      "file": "finance/finance-settings.png",
+      "path": "/finance/settings",
+      "marks": []
+    },
+    {
+      "file": "reports/reports-center.png",
+      "path": "/reports",
+      "marks": []
+    },
+    {
+      "file": "reports/membership-report.png",
+      "path": "/reports/membership",
+      "marks": []
+    },
+    {
+      "file": "reports/account-transactions-report.png",
+      "path": "/reports/account-transactions",
+      "marks": []
+    },
+    {
+      "file": "administration/users.png",
+      "path": "/admin/users",
+      "marks": []
+    },
+    {
+      "file": "administration/add-user.png",
+      "path": "/admin/users",
+      "marks": []
+    },
+    {
+      "file": "administration/account-approvals.png",
+      "path": "/admin/approvals",
+      "marks": []
+    },
+    {
+      "file": "administration/roles-permissions.png",
+      "path": "/admin/roles",
+      "marks": []
+    },
+    {
+      "file": "administration/activity-logs.png",
+      "path": "/admin/activity-logs",
+      "marks": []
+    },
+    {
+      "file": "administration/my-profile.png",
+      "path": "/profile",
+      "marks": []
+    },
+    {
+      "file": "members/account-access.png",
+      "path": "/people/members/ad238197-65da-42f0-a66e-5ed5fa3260ee",
+      "marks": []
+    },
+    {
+      "file": "settings/general.png",
+      "path": "/admin/settings",
+      "marks": []
+    },
+    {
+      "file": "settings/branding.png",
+      "path": "/admin/settings",
+      "marks": []
+    },
+    {
+      "file": "settings/login-page-content.png",
+      "path": "/admin/settings",
+      "marks": []
+    },
+    {
+      "file": "settings/background.png",
+      "path": "/admin/settings",
+      "marks": []
+    },
+    {
+      "file": "settings/colours.png",
+      "path": "/admin/settings",
+      "marks": []
+    },
+    {
+      "file": "settings/typography.png",
+      "path": "/admin/settings",
+      "marks": []
+    },
+    {
+      "file": "settings/motion.png",
+      "path": "/admin/settings",
+      "marks": []
+    },
+    {
+      "file": "mobile/dashboard.png",
+      "path": "/dashboard",
+      "marks": []
+    },
+    {
+      "file": "mobile/more-menu.png",
+      "path": "/dashboard",
+      "marks": []
+    },
+    {
+      "file": "mobile/members.png",
+      "path": "/people/members",
+      "marks": []
+    },
+    {
+      "file": "mobile/member-profile.png",
+      "path": "/people/members/ad238197-65da-42f0-a66e-5ed5fa3260ee",
+      "marks": []
+    },
+    {
+      "file": "mobile/record-attendance.png",
+      "path": "/attendance/services/ebf87349-3c59-43b9-a5ed-2c25e4c35825",
+      "marks": []
+    },
+    {
+      "file": "mobile/follow-ups.png",
+      "path": "/care/follow-ups",
+      "marks": []
+    },
+    {
+      "file": "mobile/giving.png",
+      "path": "/finance/giving",
+      "marks": []
+    },
+    {
+      "file": "mobile/new-collection.png",
+      "path": "/finance/giving/collections/new",
+      "marks": []
+    },
+    {
+      "file": "mobile/command-select.png",
+      "path": "/people/members/new",
+      "marks": []
+    }
+  ],
+  "skipped": []
+}

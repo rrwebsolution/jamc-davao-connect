@@ -23,6 +23,8 @@ A church management web app for JAMC-Davao: members, visitors, attendance, cell 
 | `npm run db:migrate` | Applies new files in `supabase/migrations` to the real database (`SUPABASE_DB_URL`). Tracks them in `app_private.migrations`. |
 | `npm run create-admin -- <email> "<password>" "<name>"` | Creates or promotes a Super Admin |
 | `npm run demo:seed` / `npm run demo:remove` | Adds or removes clearly marked demo data (`--dry-run` supported) |
+| `npm run docs:screenshots -- --base <url> --temp-admin` | Re-takes the screenshots in `docs/screenshots/` from a running build (temporary Super Admin, deleted afterwards; emails and mobile numbers masked) |
+| `npm run docs:pdf` | Builds `docs/JAMC-Davao-Connect-User-Manual.pdf` from the Markdown manual |
 
 Before calling work done: `npm run db:test`, `npm run typecheck`, `npm run lint`, `npm run build`.
 
@@ -53,7 +55,8 @@ lib/auth/              session and permission helpers
 lib/data/              server-side queries
 lib/supabase/          server, browser and admin (service-role) clients
 supabase/migrations/   numbered SQL migrations, the source of truth for the schema
-scripts/               migrate, db-test, create-admin, demo seed/remove
+scripts/               migrate, db-test, create-admin, demo seed/remove, docs screenshots/PDF
+docs/                  user manual and system workflow guide (Markdown is the source)
 proxy.ts               the Next 16 name for middleware; refreshes the session
 ```
 

@@ -12,6 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { money } from "@/components/shared/blocks";
 
 export type ChartPoint = { label: string; value: number; detail?: string };
 
@@ -42,6 +43,20 @@ const tooltipStyle = {
   boxShadow: "0 4px 16px rgb(0 0 0 / 0.08)",
 };
 
+// Peso charts label their value axis compactly (₱1.5K) so long amounts fit
+// beside the bars; the tooltip shows the exact amount.
+const PESOS = "pesos";
+const compactPesos = new Intl.NumberFormat("en-PH", {
+  style: "currency",
+  currency: "PHP",
+  notation: "compact",
+  maximumFractionDigits: 2,
+});
+
+function valueAxis(unit: string) {
+  return unit === PESOS ? { tickFormatter: (value: number) => compactPesos.format(value), width: 64 } : { width: 48 };
+}
+
 function ChartTooltip({ unit }: { unit: string }) {
   return (
     <Tooltip
@@ -50,7 +65,7 @@ function ChartTooltip({ unit }: { unit: string }) {
       labelStyle={{ fontWeight: 600, marginBottom: 2 }}
       itemStyle={{ color: "var(--popover-foreground)" }}
       labelFormatter={(label, payload) => payload?.[0]?.payload?.detail ?? label}
-      formatter={(value) => [`${value} ${unit}`, ""]}
+      formatter={(value) => [unit === PESOS ? money(Number(value)) : `${value} ${unit}`, ""]}
       separator=""
     />
   );
@@ -63,7 +78,7 @@ export function TrendLine({ data, unit }: { data: ChartPoint[]; unit: string }) 
       <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -18 }}>
         <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
         <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={{ stroke: "var(--border)" }} minTickGap={16} />
-        <YAxis tick={axis} tickLine={false} axisLine={false} allowDecimals={false} width={48} />
+        <YAxis tick={axis} tickLine={false} axisLine={false} allowDecimals={false} {...valueAxis(unit)} />
         <ChartTooltip unit={unit} />
         <Line
           type="monotone"
@@ -86,7 +101,7 @@ export function Bars({ data, unit }: { data: ChartPoint[]; unit: string }) {
       <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -18 }}>
         <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
         <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={{ stroke: "var(--border)" }} minTickGap={8} />
-        <YAxis tick={axis} tickLine={false} axisLine={false} allowDecimals={false} width={48} />
+        <YAxis tick={axis} tickLine={false} axisLine={false} allowDecimals={false} {...valueAxis(unit)} />
         <ChartTooltip unit={unit} />
         <Bar dataKey="value" fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={28} {...motion} />
       </BarChart>
@@ -101,7 +116,14 @@ export function RankedBars({ data, unit }: { data: ChartPoint[]; unit: string })
     <ResponsiveContainer width="100%" height={Math.max(160, data.length * 34 + 24)}>
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
         <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" horizontal={false} />
-        <XAxis type="number" tick={axis} tickLine={false} axisLine={false} allowDecimals={false} />
+        <XAxis
+          type="number"
+          tick={axis}
+          tickLine={false}
+          axisLine={false}
+          allowDecimals={false}
+          tickFormatter={unit === PESOS ? (value: number) => compactPesos.format(value) : undefined}
+        />
         <YAxis type="category" dataKey="label" tick={axis} tickLine={false} axisLine={{ stroke: "var(--border)" }} width={124} />
         <ChartTooltip unit={unit} />
         <Bar dataKey="value" fill="var(--chart-1)" radius={[0, 4, 4, 0]} maxBarSize={18} {...motion} />
