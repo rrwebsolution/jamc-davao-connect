@@ -74,7 +74,7 @@ export function accountFields(roles: FieldOption[]): FieldDef[] {
     {
       name: "password",
       label: "Temporary password",
-      type: "text",
+      type: "password",
       required: true,
       wide: true,
       showWhen: { field: "method", in: ["password"] },

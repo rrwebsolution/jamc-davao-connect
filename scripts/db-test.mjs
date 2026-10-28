@@ -1279,6 +1279,26 @@ await as(leader, async () => {
   check("first-time visitors: a cell leader, who cannot see visitors, counts none", (await summary()).new_visitors === 0);
 });
 
+// --- name suffix (0031) -------------------------------------------------------------------
+
+const junior = await makePerson("Juan", "Dela Cruz", { suffix: "Jr." });
+const [juniorRow] = await rows(`select full_name from public.people where id = $1`, [junior]);
+check("suffix: it is part of the full name", juniorRow.full_name === "Juan Dela Cruz Jr.", juniorRow.full_name);
+check("suffix: without one the name has no trailing space", (await rows(`select full_name from public.people where id = $1`, [inGroup]))[0].full_name === "Ina Group");
+check("suffix: a blank suffix is refused (the app saves none instead)", await denied(`update public.people set suffix = '  ' where id = $1`, [junior]));
+check("suffix: a long suffix is refused", await denied(`update public.people set suffix = repeat('x', 21) where id = $1`, [junior]));
+await db.query(`update public.people set suffix = 'III' where id = $1`, [junior]);
+check("suffix: changing it updates the full name", (await rows(`select full_name from public.people where id = $1`, [junior]))[0].full_name === "Juan Dela Cruz III");
+await as(pastor, async () => {
+  const [dir] = await rows(`select suffix, full_name from public.people_directory where id = $1`, [junior]);
+  check("suffix: the people directory has it", dir?.suffix === "III" && dir?.full_name === "Juan Dela Cruz III");
+  check("suffix: searching by name finds it", (await count(`select 1 from public.people_directory where full_name ilike '%cruz iii%'`)) === 1);
+});
+await db.query(`update public.people set suffix = 'Sr.' where id = $1`, [memberPerson]);
+check("suffix: the member's account name follows", (await rows(`select full_name from public.profiles where id = $1`, [member]))[0].full_name === "Mem Member Sr.");
+await db.query(`update public.people set suffix = null where id = $1`, [memberPerson]);
+check("suffix: and follows when it is removed", (await rows(`select full_name from public.profiles where id = $1`, [member]))[0].full_name === "Mem Member");
+
 // --- result -----------------------------------------------------------------
 
 console.log(`\n${passed} checks passed, ${failures.length} failed`);

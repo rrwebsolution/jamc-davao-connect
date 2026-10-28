@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { startNavigationProgress } from "@/components/app/navigation-progress";
+import { PasswordInput } from "@/components/shared/password-input";
 import { Field, NativeSelect, PendingButton } from "@/components/shared/form";
 import { createClient } from "@/lib/supabase/client";
 import type { ActionResult } from "@/lib/types";
@@ -20,7 +21,8 @@ export type FieldOption = { value: string; label: string };
 export type FieldDef = {
   name: string;
   label: string;
-  type: "text" | "textarea" | "date" | "time" | "number" | "select" | "switch" | "multi" | "file";
+  /** "password": a temporary password for a new account, with Generate and Copy. */
+  type: "text" | "textarea" | "date" | "time" | "number" | "select" | "switch" | "multi" | "file" | "password";
   required?: boolean;
   options?: FieldOption[];
   /** Label of the empty choice in a select. Omit to force a choice. */
@@ -273,6 +275,8 @@ export function EntityDialog({
                           </Button>
                         ) : null}
                       </div>
+                    ) : field.type === "password" ? (
+                      <PasswordInput id={id} value={String(value ?? "")} invalid={Boolean(errors[field.name])} onChange={(next) => set(field.name, next)} />
                     ) : field.type === "textarea" ? (
                       <Textarea id={id} rows={3} value={String(value ?? "")} placeholder={field.placeholder} onChange={(e) => set(field.name, e.target.value)} />
                     ) : field.type === "multi" ? (

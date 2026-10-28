@@ -16,10 +16,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { PasswordInput } from "@/components/shared/password-input";
 import { Field, FormSection, NativeSelect, PendingButton } from "@/components/shared/form";
 import { PersonAvatar } from "@/components/shared/person-avatar";
 import { createClient } from "@/lib/supabase/client";
-import { CIVIL_STATUSES, GENDERS, VISITOR_STATUSES, type Lookup, type Person } from "@/lib/types";
+import { CIVIL_STATUSES, GENDERS, SUFFIXES, VISITOR_STATUSES, type Lookup, type Person } from "@/lib/types";
 import { memberSchema, visitorSchema } from "@/lib/validation";
 
 type Option = { id: string; name: string };
@@ -43,6 +44,7 @@ function defaults(mode: "member" | "visitor", person: Person | null, options: Pe
     first_name: person?.first_name ?? "",
     middle_name: person?.middle_name ?? "",
     last_name: person?.last_name ?? "",
+    suffix: person?.suffix ?? "",
     nickname: person?.nickname ?? "",
     gender: person?.gender ?? "",
     birthdate: person?.birthdate ?? "",
@@ -259,6 +261,18 @@ export function PersonForm({
           </Field>
           <Field label="Last name" htmlFor="last_name" required error={error("last_name")}>
             <Input id="last_name" aria-invalid={Boolean(error("last_name"))} {...register("last_name")} />
+          </Field>
+          <Field label="Suffix" htmlFor="suffix" error={error("suffix")}>
+            <NativeSelect id="suffix" {...register("suffix")}>
+              <option value="">None</option>
+              {SUFFIXES.map((suffix) => (
+                <option key={suffix} value={suffix}>
+                  {suffix}
+                </option>
+              ))}
+              {/* A suffix saved before the list existed stays selectable. */}
+              {person?.suffix && !(SUFFIXES as readonly string[]).includes(person.suffix) ? <option value={person.suffix}>{person.suffix}</option> : null}
+            </NativeSelect>
           </Field>
           <Field label="Nickname" htmlFor="nickname" error={error("nickname")}>
             <Input id="nickname" {...register("nickname")} />
@@ -482,12 +496,10 @@ export function PersonForm({
               </Field>
               {account.method === "password" ? (
                 <Field label="Temporary password" htmlFor="account_password" required hint="At least 8 characters.">
-                  <Input
+                  <PasswordInput
                     id="account_password"
-                    type="text"
-                    autoComplete="off"
                     value={account.password}
-                    onChange={(event) => setAccount((current) => ({ ...current, password: event.target.value }))}
+                    onChange={(password) => setAccount((current) => ({ ...current, password }))}
                   />
                 </Field>
               ) : null}

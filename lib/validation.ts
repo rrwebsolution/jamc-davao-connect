@@ -97,6 +97,8 @@ const personBase = {
   first_name: z.string().trim().min(1, "First name is required").max(80),
   middle_name: optionalText(80),
   last_name: z.string().trim().min(1, "Last name is required").max(80),
+  /** Jr., Sr., III and the like; part of the full name. */
+  suffix: optionalText(20),
   nickname: optionalText(80),
   gender: z.enum(["male", "female", ""]).transform((value) => value || null),
   birthdate: optionalDate.refine(notInFuture, "Birthdate can't be in the future"),

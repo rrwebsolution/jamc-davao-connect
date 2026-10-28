@@ -6,12 +6,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
-import { CircleAlert, CircleCheck, Eye, EyeOff } from "lucide-react";
+import { Check, CircleAlert, CircleCheck, Copy, Eye, EyeOff, WandSparkles } from "lucide-react";
 import type { z } from "zod";
 import { requestPasswordReset, signIn, signUp, updatePassword } from "@/app/(auth)/actions";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Field, PendingButton } from "@/components/shared/form";
+import { generatePassword } from "@/components/shared/password-input";
 import { Textarea } from "@/components/ui/textarea";
 import { forgotPasswordSchema, loginSchema, passwordSchema, signUpSchema } from "@/lib/validation";
 
@@ -168,6 +170,55 @@ export function LoginForm({ systemName }: { systemName: string }) {
   );
 }
 
+/**
+ * "Generate a strong password" under the sign-up password: fills it in, then
+ * shows what was generated with a Copy button, so it can be kept safely.
+ */
+function GeneratedPassword({ disabled, onGenerate }: { disabled: boolean; onGenerate: (password: string) => void }) {
+  const [generated, setGenerated] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    if (!generated) return;
+    try {
+      await navigator.clipboard.writeText(generated);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // The password is visible in the field; it can be selected and copied by hand.
+    }
+  }
+
+  return (
+    <div className="mt-1.5 space-y-1.5">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          const password = generatePassword();
+          setGenerated(password);
+          setCopied(false);
+          onGenerate(password);
+        }}
+        className="inline-flex min-h-8 items-center gap-1.5 text-sm font-medium text-link underline-offset-4 hover:underline disabled:opacity-50 max-md:min-h-11"
+      >
+        <WandSparkles className="size-4" aria-hidden /> {generated ? "Generate another" : "Generate a strong password"}
+      </button>
+      {generated ? (
+        <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/50 px-3 py-2 text-sm" role="status">
+          <span className="min-w-0">
+            <span className="block font-mono font-medium">{generated}</span>
+            <span className="block text-xs text-muted-foreground">Save it somewhere safe. You will sign in with it.</span>
+          </span>
+          <Button type="button" variant="outline" size="sm" onClick={copy}>
+            {copied ? <Check /> : <Copy />} {copied ? "Copied" : "Copy"}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function SignUpForm({ systemName }: { systemName: string }) {
   const [pending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
@@ -235,6 +286,15 @@ export function SignUpForm({ systemName }: { systemName: string }) {
               {showPassword ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
             </button>
           </div>
+          <GeneratedPassword
+            disabled={pending}
+            onGenerate={(password) => {
+              // Fill both fields and show it: they will need it to sign in.
+              form.setValue("password", password, { shouldValidate: true, shouldDirty: true });
+              form.setValue("confirm", password, { shouldValidate: true, shouldDirty: true });
+              setShowPassword(true);
+            }}
+          />
         </Field>
         <Field label="Confirm Password" htmlFor="confirm" required error={errors.confirm?.message}>
           <Input id="confirm" type={showPassword ? "text" : "password"} autoComplete="new-password" disabled={pending} className={FIELD} {...form.register("confirm")} />

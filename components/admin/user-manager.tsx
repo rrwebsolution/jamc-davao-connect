@@ -10,6 +10,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/shared/password-input";
 import { ConfirmButton } from "@/components/shared/confirm-button";
 import { EntityDialog } from "@/components/shared/entity-dialog";
 import { Field, NativeSelect, PendingButton } from "@/components/shared/form";
@@ -359,12 +360,10 @@ export function UserManager({
                 </Field>
                 {account.method === "password" ? (
                   <Field label="Temporary password" htmlFor="account_password" required hint="At least 8 characters. Ask them to change it from their profile.">
-                    <Input
+                    <PasswordInput
                       id="account_password"
-                      type="text"
-                      autoComplete="off"
                       value={account.password}
-                      onChange={(event) => setAccount((current) => ({ ...current, password: event.target.value }))}
+                      onChange={(password) => setAccount((current) => ({ ...current, password }))}
                     />
                   </Field>
                 ) : null}

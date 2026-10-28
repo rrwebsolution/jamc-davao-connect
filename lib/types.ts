@@ -32,6 +32,9 @@ export const CIVIL_STATUSES = [
   { value: "separated", label: "Separated" },
 ] as const;
 
+/** Name suffixes offered on the person form; part of the full name. */
+export const SUFFIXES = ["Jr.", "Sr.", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"] as const;
+
 export const GENDERS = [
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },
@@ -45,6 +48,8 @@ export type Person = {
   first_name: string;
   middle_name: string | null;
   last_name: string;
+  /** Jr., Sr., III and the like; already part of full_name. */
+  suffix: string | null;
   nickname: string | null;
   full_name: string;
   gender: "male" | "female" | null;

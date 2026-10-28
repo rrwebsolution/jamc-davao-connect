@@ -182,7 +182,7 @@ export async function PersonProfilePage({
       <h2 className="mb-4 text-base font-semibold">Personal information</h2>
       <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
         <IconDetail icon={UserRound} label="Full name">
-          {[person.first_name, person.middle_name, person.last_name].filter(Boolean).join(" ")}
+          {[person.first_name, person.middle_name, person.last_name, person.suffix].filter(Boolean).join(" ")}
           {person.nickname ? <span className="text-muted-foreground"> ({person.nickname})</span> : null}
         </IconDetail>
         <IconDetail icon={Cake} label="Birthdate">
