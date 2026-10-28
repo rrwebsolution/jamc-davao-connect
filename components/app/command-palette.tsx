@@ -96,14 +96,14 @@ export function CommandPalette({ permissions }: { permissions: string[] }) {
     <>
       <Button
         variant="outline"
-        className="hidden h-8 w-56 justify-start gap-2 border-current/15 bg-transparent px-2.5 font-normal text-current/70 hover:bg-current/5 hover:text-current md:inline-flex"
+        className="hidden h-9 w-full max-w-md justify-start gap-2 border-current/12 bg-current/[0.03] px-3 font-normal text-current/60 hover:bg-current/5 hover:text-current md:inline-flex"
         onClick={() => {
           setIsMac(/Mac|iPhone|iPad/i.test(navigator.platform));
           setOpen(true);
         }}
       >
         <Search className="size-4" aria-hidden />
-        <span className="flex-1 text-left">Search or jump to…</span>
+        <span className="flex-1 truncate text-left">Search members, groups, or activities…</span>
         <kbd className="rounded border border-current/20 px-1.5 text-[10px] font-medium">Ctrl K</kbd>
       </Button>
       <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen(true)} aria-label="Search and commands">

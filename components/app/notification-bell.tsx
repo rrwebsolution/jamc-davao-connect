@@ -2,7 +2,21 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Bell, Loader2 } from "lucide-react";
+import { Popover } from "@base-ui/react/popover";
+import {
+  Bell,
+  Cake,
+  CalendarDays,
+  CalendarX,
+  Check,
+  HandHeart,
+  HeartHandshake,
+  Loader2,
+  UserCheck,
+  UserPlus,
+  type LucideIcon,
+} from "lucide-react";
+import { cn } from "cn";
 import { loadNotifications, markNotificationsRead, type NotificationItem } from "@/app/(app)/module-actions";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -16,9 +30,28 @@ function timeAgo(value: string) {
   return `${Math.round(hours / 24)}d ago`;
 }
 
+const KIND_ICONS: [prefix: string, icon: LucideIcon][] = [
+  ["follow_up", HeartHandshake],
+  ["visitor", UserPlus],
+  ["absence", CalendarX],
+  ["birthday", Cake],
+  ["event", CalendarDays],
+  ["care", HandHeart],
+  ["account", UserCheck],
+  ["approval", UserCheck],
+];
+
+function iconFor(kind: string) {
+  return KIND_ICONS.find(([prefix]) => kind.startsWith(prefix))?.[1] ?? Bell;
+}
+
+/** Popover from tablets up; a sheet from the side on phones. */
+const isWide = () => window.matchMedia("(min-width: 768px)").matches;
+
 /** Bell with the unread count; opens the list, where items link to their record. */
 export function NotificationBell() {
-  const [open, setOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -55,84 +88,168 @@ export function NotificationBell() {
     });
   }
 
+  function close() {
+    setPopoverOpen(false);
+    setSheetOpen(false);
+  }
+
+  const list = (
+    <NotificationList items={items} loading={!loaded && pending} onRead={markRead} onNavigate={close} />
+  );
+
   return (
     <>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="relative"
-        onClick={() => {
-          setOpen(true);
-          refresh();
+      <Popover.Root
+        open={popoverOpen}
+        onOpenChange={(next) => {
+          if (next) refresh();
+          if (next && !isWide()) {
+            setSheetOpen(true);
+            return;
+          }
+          setPopoverOpen(next);
         }}
-        aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
       >
-        <Bell />
-        {unread > 0 ? (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white">
-            {unread > 9 ? "9+" : unread}
-          </span>
-        ) : null}
-      </Button>
-      <Sheet open={open} onOpenChange={setOpen}>
+        <Popover.Trigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+            />
+          }
+        >
+          <Bell />
+          {unread > 0 ? (
+            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] leading-none font-semibold text-white ring-2 ring-navbar">
+              {unread > 9 ? "9+" : unread}
+            </span>
+          ) : null}
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Positioner side="bottom" align="end" sideOffset={8} className="isolate z-50 outline-none">
+            <Popover.Popup
+              className={cn(
+                "flex max-h-[min(32rem,var(--available-height))] w-96 max-w-[calc(100vw-2rem)] origin-(--transform-origin) flex-col overflow-hidden rounded-xl bg-popover text-popover-foreground shadow-lg ring-1 ring-foreground/10 outline-none duration-150",
+                "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+              )}
+            >
+              <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+                <div className="min-w-0">
+                  <Popover.Title className="text-sm font-semibold">Notifications</Popover.Title>
+                  <Popover.Description className="text-xs text-muted-foreground">
+                    {unread > 0 ? `${unread} unread` : "You're all caught up."}
+                  </Popover.Description>
+                </div>
+                {unread > 0 ? (
+                  <Button variant="ghost" size="sm" onClick={() => markRead()}>
+                    <Check /> Mark all as read
+                  </Button>
+                ) : null}
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto">{list}</div>
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>
+
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-sm">
           <SheetHeader className="border-b p-4">
             <SheetTitle>Notifications</SheetTitle>
             <SheetDescription>{unread > 0 ? `${unread} unread` : "You're all caught up."}</SheetDescription>
             {unread > 0 ? (
               <Button variant="outline" size="sm" className="mt-2 w-fit" onClick={() => markRead()}>
-                Mark all as read
+                <Check /> Mark all as read
               </Button>
             ) : null}
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto">
-            {!loaded && pending ? (
-              <p className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" aria-hidden /> Loading…
-              </p>
-            ) : items.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">No notifications yet.</p>
-            ) : (
-              <ul className="divide-y">
-                {items.map((item) => {
-                  const body = (
-                    <>
-                      <span className="flex items-start gap-2">
-                        <span className={`mt-1.5 size-2 shrink-0 rounded-full ${item.read_at ? "bg-transparent" : "bg-highlight"}`} aria-hidden />
-                        <span className="min-w-0 flex-1">
-                          <span className={`block text-sm ${item.read_at ? "" : "font-medium"}`}>{item.title}</span>
-                          {item.body ? <span className="block truncate text-xs text-muted-foreground">{item.body}</span> : null}
-                          <span className="block text-xs text-muted-foreground">{timeAgo(item.created_at)}</span>
-                        </span>
-                      </span>
-                    </>
-                  );
-                  return (
-                    <li key={item.id}>
-                      {item.link ? (
-                        <Link
-                          href={item.link}
-                          className="block p-3 hover:bg-accent"
-                          onClick={() => {
-                            if (!item.read_at) markRead(item.id);
-                            setOpen(false);
-                          }}
-                        >
-                          {body}
-                        </Link>
-                      ) : (
-                        <button type="button" className="block w-full p-3 text-left hover:bg-accent" onClick={() => !item.read_at && markRead(item.id)}>
-                          {body}
-                        </button>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
+          <div className="flex-1 overflow-y-auto">{list}</div>
         </SheetContent>
       </Sheet>
     </>
+  );
+}
+
+function NotificationList({
+  items,
+  loading,
+  onRead,
+  onNavigate,
+}: {
+  items: NotificationItem[];
+  loading: boolean;
+  onRead: (id: string) => void;
+  onNavigate: () => void;
+}) {
+  if (loading) {
+    return (
+      <p className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
+        <Loader2 className="size-4 animate-spin" aria-hidden /> Loading…
+      </p>
+    );
+  }
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
+        <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <Bell className="size-5" aria-hidden />
+        </span>
+        <p className="text-sm font-medium">No notifications yet</p>
+        <p className="text-xs text-muted-foreground">Follow-ups, approvals and reminders will show here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <ul className="divide-y">
+      {items.map((item) => {
+        const Icon = iconFor(item.kind);
+        const unread = !item.read_at;
+        const body = (
+          <span className="flex items-start gap-3">
+            <span className={cn("mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full", unread ? "bg-accent text-primary" : "bg-muted text-muted-foreground")}>
+              <Icon className="size-4" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className={cn("block text-sm", unread && "font-medium")}>{item.title}</span>
+              {item.body ? <span className="block line-clamp-2 text-xs text-muted-foreground">{item.body}</span> : null}
+              <span className="mt-0.5 block text-xs text-muted-foreground">{timeAgo(item.created_at)}</span>
+            </span>
+          </span>
+        );
+        return (
+          <li key={item.id} className={cn("group relative flex items-start", unread && "bg-accent/40")}>
+            {item.link ? (
+              <Link
+                href={item.link}
+                className="block min-w-0 flex-1 px-4 py-3 outline-none transition-colors hover:bg-accent focus-visible:bg-accent"
+                onClick={() => {
+                  if (unread) onRead(item.id);
+                  onNavigate();
+                }}
+              >
+                {body}
+              </Link>
+            ) : (
+              <div className="min-w-0 flex-1 px-4 py-3">{body}</div>
+            )}
+            {unread ? (
+              <button
+                type="button"
+                onClick={() => onRead(item.id)}
+                className="mr-2 mt-3 flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring max-md:size-10"
+                aria-label={`Mark “${item.title}” as read`}
+                title="Mark as read"
+              >
+                <span className="size-2 rounded-full bg-highlight group-hover:hidden" aria-hidden />
+                <Check className="hidden size-4 group-hover:block" aria-hidden />
+              </button>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

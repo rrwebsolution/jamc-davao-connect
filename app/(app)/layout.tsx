@@ -67,6 +67,7 @@ async function AuthenticatedShell({ children }: { children: ReactNode }) {
       brand={{
         name: branding.system_name,
         shortName: branding.system_short_name,
+        tagline: branding.tagline,
         logoUrl: brandingAssetUrl(branding.logo_path),
         lightLogoUrl: brandingAssetUrl(branding.login_logo_path),
         logoSize: branding.logo_size,

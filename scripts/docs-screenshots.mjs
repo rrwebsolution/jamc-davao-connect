@@ -14,6 +14,7 @@
 //   --public-only        only the sign-in pages (no account needed)
 //   --only <folder>      only one folder, e.g. --only finance
 //   --files <a,b>        only these pictures, e.g. --files finance/giving,mobile/more-menu
+//   --out <folder>       save somewhere else than docs/screenshots (e.g. for a visual check)
 //   --debug-path <path> --debug-expr <js>   print what one signed-in page looks like
 //
 // What it does to keep the pictures safe to share:
@@ -45,7 +46,7 @@ const option = (name, fallback) => (args.includes(name) ? args[args.indexOf(name
 const BASE = option("--base", "http://localhost:3100").replace(/\/$/, "");
 const ONLY = option("--only", null);
 const FILES = option("--files", null)?.split(",").map((name) => name.trim().replace(/\.png$/, ""));
-const OUT = "docs/screenshots";
+const OUT = option("--out", "docs/screenshots");
 const DESKTOP = { width: 1440, height: 900, mobile: false, deviceScaleFactor: 1 };
 const PHONE = { width: 390, height: 844, mobile: true, deviceScaleFactor: 2 };
 const EDGE =

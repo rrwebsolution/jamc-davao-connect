@@ -101,7 +101,7 @@ export function CommandSelect({
           aria-label={ariaLabel}
           aria-invalid={ariaInvalid}
           className={cn(
-            "flex h-8 w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-2.5 text-left type-input outline-none transition-colors max-md:h-11 max-md:px-3",
+            "flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-3 text-left type-input outline-none transition-colors max-md:h-11 max-md:px-3",
             "hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:border-ring",
             "disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive dark:bg-input/30",
             className,

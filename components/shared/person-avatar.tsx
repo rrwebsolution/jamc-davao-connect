@@ -33,6 +33,7 @@ const TONES = {
   success: "bg-success/12 text-success",
   warning: "bg-warning/15 text-warning",
   danger: "bg-destructive/10 text-destructive",
+  info: "bg-info/12 text-info",
   brand: "bg-highlight/12 text-highlight",
 } as const;
 
@@ -44,7 +45,7 @@ export function StatusPill({
   children: React.ReactNode;
 }) {
   return (
-    <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap", TONES[tone])}>
+    <span className={cn("inline-flex h-5.5 items-center rounded-full px-2.5 text-xs leading-none font-medium whitespace-nowrap", TONES[tone])}>
       {children}
     </span>
   );

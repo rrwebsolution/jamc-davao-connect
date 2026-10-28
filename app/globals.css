@@ -27,6 +27,7 @@
   --color-highlight-foreground: var(--highlight-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -79,7 +80,7 @@
   --brand-button: #7c2d12;
   --brand-button-fg: #ffffff;
   --brand-link: #9a3412;
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 }
 
 /*
@@ -108,6 +109,7 @@
   --destructive: oklch(0.55 0.21 27);
   --success: oklch(0.5 0.13 150);
   --warning: oklch(0.58 0.14 70);
+  --info: oklch(0.52 0.14 250);
   --border: color-mix(in oklch, var(--brand-background-fg) 13%, var(--brand-background));
   --input: color-mix(in oklch, var(--brand-background-fg) 18%, var(--brand-background));
   --ring: color-mix(in oklch, var(--brand-primary) 55%, transparent);
@@ -152,6 +154,7 @@
   --destructive: oklch(0.7 0.19 22);
   --success: oklch(0.74 0.14 150);
   --warning: oklch(0.8 0.13 80);
+  --info: oklch(0.75 0.11 245);
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 18%);
   --ring: color-mix(in oklch, var(--brand-primary) 45%, white);

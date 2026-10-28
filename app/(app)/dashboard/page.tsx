@@ -2,9 +2,10 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { PageBoundary } from "@/components/app/page-boundary";
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, Cake, CalendarCheck, CalendarDays, FlaskConical, HeartHandshake, Minus, UserCheck, UserPlus, Users, UsersRound, type LucideIcon } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Cake, CalendarCheck, CalendarDays, FlaskConical, HeartHandshake, Minus, UserCheck, UserPlus, Users, UsersRound } from "lucide-react";
 import { Bars, RankedBars, TrendLine, type ChartPoint } from "@/components/dashboard/charts";
 import { VisitorStatusPill } from "@/components/people/visitor-status";
+import { StatCard } from "@/components/shared/blocks";
 import { PersonAvatar, StatusPill } from "@/components/shared/person-avatar";
 import { LoadError, NoAccess, PageHeader, PageSkeleton } from "@/components/shared/states";
 import { can, P } from "@/lib/auth/permissions";
@@ -39,12 +40,12 @@ type Stats = {
 
 function Trend({ change, label }: { change: number | null; label: string }) {
   if (change === null) {
-    return <p className="mt-2 text-xs text-muted-foreground">{label}</p>;
+    return <p className="mt-1 truncate text-xs text-muted-foreground">{label}</p>;
   }
   const Icon = change > 0 ? ArrowUpRight : change < 0 ? ArrowDownRight : Minus;
   const tone = change > 0 ? "text-success" : change < 0 ? "text-destructive" : "text-muted-foreground";
   return (
-    <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+    <p className="mt-1 flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground">
       <span className={`inline-flex items-center font-medium ${tone}`}>
         <Icon className="size-3.5" aria-hidden />
         {change > 0 ? "+" : ""}
@@ -52,43 +53,6 @@ function Trend({ change, label }: { change: number | null; label: string }) {
       </span>
       {label}
     </p>
-  );
-}
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  href,
-  children,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  href?: string;
-  children?: ReactNode;
-}) {
-  const body = (
-    <>
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <span className="flex size-8 items-center justify-center rounded-lg bg-accent text-primary">
-          <Icon className="size-4" aria-hidden />
-        </span>
-      </div>
-      <p className="mt-1.5 text-2xl font-semibold tabular-nums sm:mt-2 sm:text-3xl">{value}</p>
-      {children}
-    </>
-  );
-  const className = "block rounded-xl border bg-card p-3 shadow-xs sm:p-4";
-  return href ? (
-    <Link href={href} data-reveal="" className={`${className} motion-card hover:border-ring`}>
-      {body}
-    </Link>
-  ) : (
-    <div data-reveal="" className={className}>
-      {body}
-    </div>
   );
 }
 
@@ -266,7 +230,7 @@ async function DashboardContent() {
               />
             </StatCard>
             <StatCard icon={UserCheck} label="Active members" value={String(stats.active_members)} href="/people/members?status=active">
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-1 truncate text-xs text-muted-foreground">
                 {stats.total_members > 0 ? `${Math.round((stats.active_members / stats.total_members) * 100)}% of members` : "No members yet"}
               </p>
             </StatCard>
@@ -297,32 +261,32 @@ async function DashboardContent() {
                 }
               />
             ) : (
-              <p className="mt-2 text-xs text-muted-foreground">No service recorded yet</p>
+              <p className="mt-1 truncate text-xs text-muted-foreground">No service recorded yet</p>
             )}
           </StatCard>
         ) : null}
         {seesMembers ? (
           <StatCard icon={UsersRound} label="Active cell groups" value={String(stats.active_cell_groups)} href="/groups">
-            <p className="mt-2 text-xs text-muted-foreground">
+            <p className="mt-1 truncate text-xs text-muted-foreground">
               {stats.cell_group_participation.reduce((sum, group) => sum + group.members, 0)} members in a group
             </p>
           </StatCard>
         ) : null}
         <StatCard icon={HeartHandshake} label="Pending follow-ups" value={String(extras.pending_follow_ups ?? 0)} href="/care/follow-ups">
-          <p className={`mt-2 text-xs ${extras.overdue_follow_ups ? "font-medium text-destructive" : "text-muted-foreground"}`}>
+          <p className={`mt-1 truncate text-xs ${extras.overdue_follow_ups ? "font-medium text-destructive" : "text-muted-foreground"}`}>
             {extras.overdue_follow_ups ? `${extras.overdue_follow_ups} overdue` : "None overdue"}
           </p>
         </StatCard>
         {approvals ? (
           <StatCard icon={UserCheck} label="Pending account approvals" value={String(approvals.count ?? 0)} href="/admin/approvals">
-            <p className={`mt-2 text-xs ${approvals.count ? "font-medium text-highlight" : "text-muted-foreground"}`}>
+            <p className={`mt-1 truncate text-xs ${approvals.count ? "font-medium text-highlight" : "text-muted-foreground"}`}>
               {approvals.count ? "Review registrations" : "Nothing waiting"}
             </p>
           </StatCard>
         ) : null}
         {seesEvents ? (
           <StatCard icon={CalendarDays} label="Upcoming events" value={String(extras.upcoming_events ?? 0)} href="/events">
-            <p className="mt-2 text-xs text-muted-foreground">
+            <p className="mt-1 truncate text-xs text-muted-foreground">
               {(events?.data ?? [])[0] ? `Next: ${(events?.data ?? [])[0].name}` : "Nothing scheduled"}
             </p>
           </StatCard>

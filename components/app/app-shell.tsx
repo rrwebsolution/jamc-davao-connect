@@ -7,6 +7,7 @@ import { ArrowLeft, ChevronRight, Loader2, Menu, PanelLeftClose, PanelLeftOpen }
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CommandPalette } from "@/components/app/command-palette";
 import { LabelsProvider, useLabel } from "@/components/app/labels";
 import { NavigationProgress } from "@/components/app/navigation-progress";
@@ -29,6 +30,8 @@ export type ShellUser = {
 export type ShellBrand = {
   name: string;
   shortName: string;
+  /** Shown small under the name in the sidebar. */
+  tagline: string;
   /** The church logo, made for the dark sidebar. */
   logoUrl: string | null;
   /** The login page's light-mode logo (dark or full colour), if one was uploaded: readable on a light header. */
@@ -83,27 +86,22 @@ function NavLink({
 }) {
   const Icon = item.icon;
   const title = useLabel()(item.title);
-  const base = cn(
-    "flex h-9 items-center gap-2.5 rounded-lg px-2.5 type-sidebar transition-colors",
-    collapsed && "justify-center px-0",
-  );
-
-
-  return (
+  const link = (
     <Link
       href={item.href}
       onClick={() => onNavigate(item.href)}
       aria-current={active ? "page" : undefined}
-      title={collapsed ? title : undefined}
       className={cn(
-        base,
-        "relative",
+        "relative flex h-10 items-center gap-3 rounded-lg px-3 type-sidebar transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+        collapsed && "justify-center px-0",
         active
-          ? "bg-sidebar-primary font-medium text-sidebar-primary-foreground"
-          : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+          ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
+          : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
       )}
     >
-      <Icon className="size-4 shrink-0" aria-hidden />
+      {/* A short bar marks the current page, besides the fill. */}
+      {active ? <span className="absolute inset-y-2.5 left-0 w-0.5 rounded-full bg-sidebar-foreground" aria-hidden /> : null}
+      <Icon className="size-[18px] shrink-0" aria-hidden />
       {collapsed ? <span className="sr-only">{title}</span> : <span className="truncate">{title}</span>}
       {badge ? (
         <span
@@ -118,6 +116,16 @@ function NavLink({
       ) : null}
       {collapsed || badge ? null : <LinkPending />}
     </Link>
+  );
+
+  if (!collapsed) return link;
+  return (
+    <Tooltip>
+      <TooltipTrigger render={link} />
+      <TooltipContent side="right" sideOffset={8}>
+        {title}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -150,22 +158,28 @@ function SidebarContent({
 
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className={cn("flex h-14 shrink-0 items-center gap-2.5 border-b border-sidebar-border px-4", collapsed && "justify-center px-0")}>
+      <div className={cn("flex h-16 shrink-0 items-center gap-2.5 border-b border-sidebar-border px-4", collapsed && "justify-center px-0")}>
         {brand.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={brand.logoUrl} alt="" style={{ height: brand.logoSize }} className="w-auto max-w-[70%] shrink-0 object-contain" />
+          <img src={brand.logoUrl} alt="" style={{ height: brand.logoSize }} className="w-auto max-w-[55%] shrink-0 object-contain" />
         ) : (
           <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-accent text-sm font-bold">
             {brand.shortName.slice(0, 1)}
           </span>
         )}
-        {collapsed ? null : <span className="truncate font-semibold">{brand.shortName}</span>}
+        {collapsed ? null : (
+          <span className="min-w-0 leading-tight" title={brand.name}>
+            <span className="block truncate font-semibold">{brand.shortName}</span>
+            {/* A logo usually carries the church's name already: the tagline is shown only without one. */}
+            {brand.tagline && !brand.logoUrl ? <span className="block truncate text-xs text-sidebar-foreground/65">{brand.tagline}</span> : null}
+          </span>
+        )}
       </div>
-      <nav className="flex-1 space-y-4 overflow-y-auto p-3" aria-label="Main">
+      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4" aria-label="Main">
         {sections.map((section, index) => (
           <div key={section.label ?? index} className="space-y-1">
             {section.label && !collapsed ? (
-              <p className="px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/55">
+              <p className="px-3 pb-1 text-xs font-medium text-sidebar-foreground/55">
                 {label(section.label)}
               </p>
             ) : null}
@@ -204,7 +218,7 @@ function Breadcrumbs({ brand }: { brand: ShellBrand }) {
   const isHome = pathname === "/dashboard";
 
   return (
-    <div className="flex min-w-0 items-center gap-1">
+    <div className="flex min-w-0 flex-1 items-center gap-1 md:hidden">
       {/* Phones: a back arrow on inner screens, like an app. */}
       {nested ? (
         <Button variant="ghost" size="icon" className="-ml-1 md:hidden" onClick={() => router.back()} aria-label="Back">
@@ -298,7 +312,7 @@ export function AppShell({
       <aside
         className={cn(
           "sticky top-0 hidden h-dvh shrink-0 border-r border-sidebar-border transition-[width] duration-200 lg:block print:hidden",
-          collapsed ? "w-16" : "w-64",
+          collapsed ? "w-16" : "w-60",
         )}
       >
         <SidebarContent brand={brand} permissions={permissions} collapsed={collapsed} badges={badges} />
@@ -321,7 +335,7 @@ export function AppShell({
       </Sheet>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-[calc(3.5rem+env(safe-area-inset-top))] shrink-0 items-center gap-2 border-b bg-navbar px-3 pt-[env(safe-area-inset-top)] text-navbar-foreground sm:px-5 print:hidden">
+        <header className="sticky top-0 z-30 flex h-[calc(3.5rem+env(safe-area-inset-top))] shrink-0 items-center gap-2 border-b bg-navbar px-3 pt-[env(safe-area-inset-top)] text-navbar-foreground sm:px-5 md:h-16 lg:px-6 print:hidden">
           {/* Tablets keep the slide-in menu; phones use the tab bar at the bottom instead. */}
           <Button
             variant="ghost"
@@ -342,8 +356,10 @@ export function AppShell({
             {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
           </Button>
           <Breadcrumbs brand={brand} />
-          <div className="ml-auto flex items-center gap-1">
+          <div className="min-w-0 md:flex-1">
             <CommandPalette permissions={permissions} />
+          </div>
+          <div className="ml-auto flex items-center gap-1">
             <NotificationBell />
             <span className="hidden items-center gap-1 md:flex">
               {allowThemeToggle ? <ThemeToggle /> : null}
@@ -355,7 +371,7 @@ export function AppShell({
           </div>
         </header>
         {/* On phones the content clears the tab bar and the home indicator. */}
-        <main className="mx-auto w-full max-w-7xl flex-1 p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6">
+        <main className="mx-auto w-full max-w-7xl flex-1 p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6 lg:p-6">
           <PageCacheProvider userId={user.id}>{children}</PageCacheProvider>
         </main>
       </div>
