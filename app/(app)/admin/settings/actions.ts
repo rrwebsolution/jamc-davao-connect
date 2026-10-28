@@ -8,6 +8,7 @@ import { isUuid, type LookupTable } from "@/lib/data/common";
 import { fail, INVALID_INPUT, NOT_ALLOWED } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
 import { BACKGROUND_RESET } from "@/lib/background";
+import { cleanLabels } from "@/lib/labels";
 import { DEFAULT_COLORS, DEFAULT_LOGIN_CONTENT } from "@/lib/theme";
 import { DEFAULT_TYPOGRAPHY } from "@/lib/typography";
 import type { ActionResult } from "@/lib/types";
@@ -175,6 +176,35 @@ export async function resetTypography(): Promise<ActionResult> {
   const { data, error } = await supabase
     .from("system_appearance_settings")
     .update({ ...DEFAULT_TYPOGRAPHY, updated_by: access.userId })
+    .eq("id", true)
+    .select("id")
+    .maybeSingle();
+  if (error) return fail(error);
+  if (!data) return NOT_ALLOWED;
+
+  updateTag(BRANDING_TAG);
+  refresh();
+  return { ok: true };
+}
+
+// --- Labels ------------------------------------------------------------------
+
+/**
+ * Saves the renamed menu items and page titles. The whole set is replaced, so
+ * a label left out goes back to its original text; an empty object resets all.
+ */
+export async function saveLabels(input: unknown): Promise<ActionResult> {
+  const access = await getAccessWith(P.appearanceManage);
+  if (!access) return NOT_ALLOWED;
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) return INVALID_INPUT;
+  const labels = cleanLabels(input as Record<string, unknown>);
+  if (!labels) return INVALID_INPUT;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("system_appearance_settings")
+    .update({ ui_labels: labels, updated_by: access.userId })
     .eq("id", true)
     .select("id")
     .maybeSingle();

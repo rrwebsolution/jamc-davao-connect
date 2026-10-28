@@ -2,6 +2,7 @@
 // Appearance settings), so it must stay free of server-only imports.
 
 import { DEFAULT_BACKGROUND, type SystemBackgroundSettings } from "@/lib/background";
+import type { UiLabels } from "@/lib/labels";
 import { DEFAULT_MOTION, type MotionSettings } from "@/lib/motion";
 import { DEFAULT_TYPOGRAPHY, type Typography } from "@/lib/typography";
 
@@ -61,6 +62,8 @@ export type Branding = ThemeColors & Typography & LoginContent & MotionSettings 
   login_logo_size: number;
   default_theme: ThemeMode;
   allow_user_theme_override: boolean;
+  /** Renamed menu items and page titles: { "<text in the app>": "<new text>" }. */
+  ui_labels: UiLabels;
   updated_at: string | null;
 };
 
@@ -97,6 +100,7 @@ export const DEFAULT_BRANDING: Branding = {
   login_logo_size: 56,
   default_theme: "light",
   allow_user_theme_override: true,
+  ui_labels: {},
   updated_at: null,
 };
 

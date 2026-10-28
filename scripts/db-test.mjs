@@ -1061,6 +1061,25 @@ await as(admin, async () => {
 const [{ b: backgroundSaved }] = await rows(`select public.get_public_branding() as b`);
 check("background: it is separate from the login background", backgroundSaved.system_background_path === "system-background-test.webp" && backgroundSaved.login_background_path === null);
 
+// --- system labels ----------------------------------------------------------------------
+
+const [{ b: labelDefaults }] = await rows(`select public.get_public_branding() as b`);
+check("labels: nothing is renamed by default", JSON.stringify(labelDefaults.ui_labels) === "{}");
+await as(pastor, async () => {
+  check("labels: a pastor cannot change them", (await affected(`update public.system_appearance_settings set ui_labels = '{"Cell Groups":"Life Groups"}'`)) === 0);
+});
+await as(admin, async () => {
+  check("labels: must be an object", await denied(`update public.system_appearance_settings set ui_labels = '["Life Groups"]'`));
+  check("labels: every value must be text", await denied(`update public.system_appearance_settings set ui_labels = '{"Cell Groups":5}'`));
+  check("labels: a value over 300 characters is refused", await denied(`update public.system_appearance_settings set ui_labels = jsonb_build_object('Cell Groups', repeat('x', 301))`));
+  check("labels: a value of 300 characters is allowed", (await affected(`update public.system_appearance_settings set ui_labels = jsonb_build_object('Cell Groups', repeat('x', 300))`)) === 1);
+  const logsBefore = await count(`select 1 from public.activity_logs where module = 'appearance'`);
+  await db.query(`update public.system_appearance_settings set ui_labels = '{"Cell Groups":"Life Groups"}'`);
+  check("labels: saving writes one 'Updated system labels' entry and nothing else", (await count(`select 1 from public.activity_logs where description = 'Updated system labels'`)) === 2 && (await count(`select 1 from public.activity_logs where module = 'appearance'`)) === logsBefore + 1);
+});
+const [{ b: labelsSaved }] = await rows(`select public.get_public_branding() as b`);
+check("labels: the saved labels reach the public branding", labelsSaved.ui_labels["Cell Groups"] === "Life Groups");
+
 // --- giving collections (batch entry) ---------------------------------------------------
 
 const [{ id: coll_tithes }] = await rows(`select id from public.giving_categories order by sort_order, name limit 1`);

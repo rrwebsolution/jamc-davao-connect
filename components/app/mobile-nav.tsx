@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "cn";
 import { signOut } from "@/app/(app)/actions";
+import { useLabel } from "@/components/app/labels";
 import { clearPageCache } from "@/components/app/page-boundary";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PersonAvatar } from "@/components/shared/person-avatar";
@@ -67,6 +68,7 @@ function SheetRow({ href, icon: Icon, children, onClick }: { href: string; icon:
 /** Phone navigation: a fixed tab bar, with everything else behind "More". */
 export function BottomNav({ permissions, badges = {} }: { permissions: string[]; badges?: Record<string, number> }) {
   const pathname = usePathname();
+  const label = useLabel();
   const [moreOpen, setMoreOpen] = useState(false);
   const [pending, setPending] = useState<{ href: string; from: string } | null>(null);
   const tabs = tabsFor(permissions);
@@ -106,7 +108,7 @@ export function BottomNav({ permissions, badges = {} }: { permissions: string[];
               <span className={cn("flex h-7 w-14 items-center justify-center rounded-full transition-colors", active && "bg-primary/12")}>
                 <tab.icon className={cn("size-5 transition-transform duration-200", active && "scale-110")} aria-hidden />
               </span>
-              {tab.label}
+              {label(tab.label)}
             </Link>
           );
         })}
@@ -115,25 +117,25 @@ export function BottomNav({ permissions, badges = {} }: { permissions: string[];
             <Menu className="size-5" aria-hidden />
             {moreCount > 0 ? <span className="absolute right-2 top-0.5 size-2 rounded-full bg-highlight" aria-label={`${moreCount} waiting`} /> : null}
           </span>
-          More
+          {label("More")}
         </button>
       </nav>
 
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetContent side="bottom" className={sheetClass}>
           <SheetHeader className="border-b px-5 py-4">
-            <SheetTitle>All modules</SheetTitle>
+            <SheetTitle>{label("All modules")}</SheetTitle>
             <SheetDescription className="sr-only">Everything you have access to</SheetDescription>
           </SheetHeader>
           <div className="overflow-y-auto py-2">
             {sections.map((section, index) => (
               <div key={section.label ?? index}>
                 {section.label ? (
-                  <p className="px-5 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{section.label}</p>
+                  <p className="px-5 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label(section.label)}</p>
                 ) : null}
                 {section.items.map((item) => (
                   <SheetRow key={item.href} href={item.href} icon={item.icon} onClick={() => setMoreOpen(false)}>
-                    {item.title}
+                    {label(item.title)}
                     {badges[item.href] ? (
                       <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-highlight px-1.5 text-[11px] font-semibold text-highlight-foreground">
                         {badges[item.href]}

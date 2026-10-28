@@ -10,6 +10,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NAV_KEYWORDS, QUICK_ACTIONS } from "@/lib/commands";
 import { NAV } from "@/lib/nav";
+import { useLabel } from "@/components/app/labels";
 
 const RECORD_GROUPS: { key: keyof SearchResults; label: string; icon: LucideIcon }[] = [
   { key: "members", label: "Members", icon: Users },
@@ -30,6 +31,7 @@ const allowed = (required: string[], permissions: string[]) =>
  */
 export function CommandPalette({ permissions }: { permissions: string[] }) {
   const router = useRouter();
+  const label = useLabel();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults | null>(null);
@@ -80,9 +82,13 @@ export function CommandPalette({ permissions }: { permissions: string[] }) {
   }
 
   const term = query.trim();
+  // Renamed titles are shown; the original names still match a search.
   const sections = NAV.map((section) => ({
-    label: section.label ?? "Navigation",
-    items: section.items.filter((item) => allowed(item.permissions, permissions)),
+    label: section.label ? label(section.label) : "Navigation",
+    original: section.label ?? "",
+    items: section.items
+      .filter((item) => allowed(item.permissions, permissions))
+      .map((item) => ({ ...item, original: item.title, title: label(item.title) })),
   })).filter((section) => section.items.length > 0);
   const actions = QUICK_ACTIONS.filter((action) => allowed(action.permissions, permissions));
 
@@ -147,7 +153,7 @@ export function CommandPalette({ permissions }: { permissions: string[] }) {
                     <CommandItem
                       key={item.href}
                       value={`go ${item.title}`}
-                      keywords={[section.label, ...(NAV_KEYWORDS[item.href] ?? [])]}
+                      keywords={[section.label, section.original, item.original, ...(NAV_KEYWORDS[item.href] ?? [])]}
                       onSelect={() => go(item.href)}
                     >
                       <item.icon />

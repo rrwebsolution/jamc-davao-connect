@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PageBoundary } from "@/components/app/page-boundary";
 import { AppearanceForm } from "@/components/settings/appearance-form";
 import { DemoDataPanel, type DemoSummary } from "@/components/settings/demo-data-panel";
+import { LabelsForm } from "@/components/settings/labels-form";
 import { LookupManager } from "@/components/settings/lookup-manager";
 import {
   AttendanceSettingsForm,
@@ -59,6 +60,7 @@ async function SettingsContent() {
           <TabsList>
             {canSettings ? <TabsTrigger value="general">General</TabsTrigger> : null}
             {canAppearance ? <TabsTrigger value="appearance">Branding &amp; Appearance</TabsTrigger> : null}
+            {canAppearance ? <TabsTrigger value="labels">Labels</TabsTrigger> : null}
             {canSettings ? <TabsTrigger value="membership">Membership</TabsTrigger> : null}
             {canSettings ? <TabsTrigger value="attendance">Attendance</TabsTrigger> : null}
             {canStages ? <TabsTrigger value="discipleship">Discipleship</TabsTrigger> : null}
@@ -81,6 +83,12 @@ async function SettingsContent() {
               branding={branding}
               assetBaseUrl={`${supabaseUrl}/storage/v1/object/public/branding`}
             />
+          </TabsContent>
+        ) : null}
+
+        {canAppearance ? (
+          <TabsContent value="labels">
+            <LabelsForm key={branding.updated_at ?? "initial"} labels={branding.ui_labels} />
           </TabsContent>
         ) : null}
 

@@ -80,6 +80,7 @@ async function AuthenticatedShell({ children }: { children: ReactNode }) {
       }}
       permissions={access.permissions}
       allowThemeToggle={branding.allow_user_theme_override}
+      labels={branding.ui_labels}
       badges={pendingApprovals > 0 ? { "/admin/approvals": pendingApprovals } : {}}
     >
       {children}

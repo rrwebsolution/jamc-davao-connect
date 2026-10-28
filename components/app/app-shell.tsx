@@ -8,12 +8,14 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CommandPalette } from "@/components/app/command-palette";
+import { LabelsProvider, useLabel } from "@/components/app/labels";
 import { NavigationProgress } from "@/components/app/navigation-progress";
 import { AccountSheet, BottomNav } from "@/components/app/mobile-nav";
 import { NotificationBell } from "@/components/app/notification-bell";
 import { PageCacheProvider } from "@/components/app/page-boundary";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import { UserMenu } from "@/components/app/user-menu";
+import type { UiLabels } from "@/lib/labels";
 import { NAV, PAGE_TITLES, type NavItem } from "@/lib/nav";
 
 export type ShellUser = {
@@ -80,6 +82,7 @@ function NavLink({
   onNavigate: (href: string) => void;
 }) {
   const Icon = item.icon;
+  const title = useLabel()(item.title);
   const base = cn(
     "flex h-9 items-center gap-2.5 rounded-lg px-2.5 type-sidebar transition-colors",
     collapsed && "justify-center px-0",
@@ -91,7 +94,7 @@ function NavLink({
       href={item.href}
       onClick={() => onNavigate(item.href)}
       aria-current={active ? "page" : undefined}
-      title={collapsed ? item.title : undefined}
+      title={collapsed ? title : undefined}
       className={cn(
         base,
         "relative",
@@ -101,7 +104,7 @@ function NavLink({
       )}
     >
       <Icon className="size-4 shrink-0" aria-hidden />
-      {collapsed ? <span className="sr-only">{item.title}</span> : <span className="truncate">{item.title}</span>}
+      {collapsed ? <span className="sr-only">{title}</span> : <span className="truncate">{title}</span>}
       {badge ? (
         <span
           className={cn(
@@ -141,6 +144,7 @@ function SidebarContent({
   // Highlight the clicked item straight away, before the new route commits.
   // The pending choice only counts while we are still on the page it was made on.
   const pathname = usePathname();
+  const label = useLabel();
   const [pending, setPending] = useState<{ href: string; from: string } | null>(null);
   const target = pending && pending.from === pathname ? pending.href : pathname;
 
@@ -162,7 +166,7 @@ function SidebarContent({
           <div key={section.label ?? index} className="space-y-1">
             {section.label && !collapsed ? (
               <p className="px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/55">
-                {section.label}
+                {label(section.label)}
               </p>
             ) : null}
             {section.label && collapsed ? <div className="mx-2 border-t border-sidebar-border" /> : null}
@@ -192,6 +196,7 @@ const TOP_LEVEL = new Set([...NAV.flatMap((section) => section.items.map((item) 
 function Breadcrumbs({ brand }: { brand: ShellBrand }) {
   const pathname = usePathname();
   const router = useRouter();
+  const label = useLabel();
   const segments = pathname.split("/").filter(Boolean);
   const crumbs = segments.map((segment) => PAGE_TITLES[segment] ?? "Details");
   const title = [...crumbs].reverse().find((crumb) => crumb !== "Details" || crumbs.length === 1) ?? "Dashboard";
@@ -236,13 +241,13 @@ function Breadcrumbs({ brand }: { brand: ShellBrand }) {
         </span>
       ) : null}
       <div className={cn("min-w-0", isHome && "max-md:hidden")}>
-      <p className="truncate text-base font-semibold md:text-base">{crumbs.at(-1) === "Details" ? `${title} details` : title}</p>
+      <p className="truncate text-base font-semibold md:text-base">{crumbs.at(-1) === "Details" ? `${label(title)} details` : label(title)}</p>
       {crumbs.length > 1 ? (
         <ol className="hidden items-center gap-1 text-xs opacity-70 sm:flex" aria-label="Breadcrumb">
           {crumbs.map((crumb, index) => (
             <li key={index} className="flex items-center gap-1">
               {index > 0 ? <ChevronRight className="size-3" aria-hidden /> : null}
-              {crumb}
+              {label(crumb)}
             </li>
           ))}
         </ol>
@@ -257,6 +262,7 @@ export function AppShell({
   user,
   permissions,
   allowThemeToggle,
+  labels,
   badges = {},
   children,
 }: {
@@ -264,6 +270,8 @@ export function AppShell({
   user: ShellUser;
   permissions: string[];
   allowThemeToggle: boolean;
+  /** Renamed menu items and page titles, from Settings → Labels. */
+  labels: UiLabels;
   /** Counts to show beside navigation items, keyed by href. */
   badges?: Record<string, number>;
   children: ReactNode;
@@ -282,6 +290,7 @@ export function AppShell({
   }
 
   return (
+    <LabelsProvider labels={labels}>
     <div className="flex min-h-dvh w-full">
       <Suspense fallback={null}>
         <NavigationProgress />
@@ -352,5 +361,6 @@ export function AppShell({
       </div>
       <BottomNav permissions={permissions} badges={badges} />
     </div>
+    </LabelsProvider>
   );
 }
