@@ -116,7 +116,7 @@ export function LabelsForm({ labels }: { labels: UiLabels }) {
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Find a label…"
               aria-label="Find a label"
-              className="pl-8"
+              className="pl-8 max-md:pl-10"
             />
           </div>
           <p className="text-sm text-muted-foreground">

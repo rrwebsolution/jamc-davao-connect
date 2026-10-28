@@ -169,7 +169,7 @@ function SidebarContent({
         )}
         {collapsed ? null : (
           <span className="min-w-0 leading-tight" title={brand.name}>
-            <span className="block truncate font-semibold">{brand.shortName}</span>
+            <span className="line-clamp-2 text-sm font-semibold">{brand.shortName}</span>
             {/* A logo usually carries the church's name already: the tagline is shown only without one. */}
             {brand.tagline && !brand.logoUrl ? <span className="block truncate text-xs text-sidebar-foreground/65">{brand.tagline}</span> : null}
           </span>

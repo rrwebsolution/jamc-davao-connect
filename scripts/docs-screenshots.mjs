@@ -14,6 +14,7 @@
 //   --public-only        only the sign-in pages (no account needed)
 //   --only <folder>      only one folder, e.g. --only finance
 //   --files <a,b>        only these pictures, e.g. --files finance/giving,mobile/more-menu
+//   --any-records        open real records when there is no demo data (only with --out)
 //   --out <folder>       save somewhere else than docs/screenshots (e.g. for a visual check)
 //   --debug-path <path> --debug-expr <js>   print what one signed-in page looks like
 //
@@ -182,7 +183,17 @@ async function temporaryAdmin() {
 /** Demo records to open, so profile pictures show demo people rather than real ones. */
 async function demoIds() {
   if (!admin) return {};
-  const first = async (table, build) => (await build(admin.from(table).select("id")).limit(1).maybeSingle()).data?.id ?? null;
+  // --any-records: without demo data, open real records instead (for a visual check, not for the manual).
+  const anyRecords = flag("--any-records");
+  // The same query with its is_demo condition dropped (the builder methods return the builder itself).
+  const withoutDemoFilter = (query) => {
+    const eq = query.eq.bind(query);
+    query.eq = (column, value) => (column === "is_demo" ? query : eq(column, value));
+    return query;
+  };
+  const first = async (table, build) =>
+    (await build(admin.from(table).select("id")).limit(1).maybeSingle()).data?.id ??
+    (anyRecords ? ((await build(withoutDemoFilter(admin.from(table).select("id"))).limit(1).maybeSingle()).data?.id ?? null) : null);
   return {
     member: await first("people", (q) => q.eq("person_type", "member").eq("is_demo", true).order("member_code")),
     visitor: await first("people", (q) => q.eq("person_type", "visitor").eq("is_demo", true).order("created_at")),

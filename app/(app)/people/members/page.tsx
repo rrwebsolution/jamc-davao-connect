@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 import { PageBoundary } from "@/components/app/page-boundary";
 import Link from "next/link";
-import { Archive, ArchiveRestore, Eye, Pencil, Plus, Users } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { setPersonArchived } from "@/app/(app)/people/actions";
 import { buttonVariants } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ConfirmButton } from "@/components/shared/confirm-button";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { FilterSelect, Pagination, SearchInput, SortLink } from "@/components/shared/list-controls";
 import { PersonAvatar, StatusPill } from "@/components/shared/person-avatar";
+import { RowMenu } from "@/components/shared/row-menu";
 import { EmptyState, LoadError, NoAccess, PageHeader, PageSkeleton } from "@/components/shared/states";
 import { can, P } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
 import { getChurchSettings, getLookup, getListParams, signPhotoUrls } from "@/lib/data/common";
 import { getCellGroupOptions, listPeople } from "@/lib/data/people";
-import { formatDate, titleCase } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import type { Person } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Members" };
@@ -47,44 +47,34 @@ async function MembersContent({ searchParams }: Pick<PageProps<"/people/members"
   const hasFilters = Object.keys(params).some((key) => !["page", "sort", "dir"].includes(key));
 
   const actions = (person: Person) => (
-    <div className="flex items-center justify-end gap-1">
-      <Link
-        href={`/people/members/${person.id}`}
-        className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
-        aria-label={`View ${person.full_name}`}
-      >
-        <Eye />
-      </Link>
-      {canEdit && !person.archived_at ? (
-        <Link
-          href={`/people/members/${person.id}/edit`}
-          className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
-          aria-label={`Edit ${person.full_name}`}
-        >
-          <Pencil />
-        </Link>
-      ) : null}
-      {canArchive ? (
-        <ConfirmButton
-          action={setPersonArchived.bind(null, person.id, !person.archived_at)}
-          title={person.archived_at ? "Restore this member?" : "Archive this member?"}
-          description={
-            person.archived_at
-              ? `${person.full_name} will appear in the members list again.`
-              : `${person.full_name} will be hidden from lists and counts. Their history is kept and they can be restored at any time.`
-          }
-          confirmLabel={person.archived_at ? "Restore" : "Archive"}
-          successMessage={person.archived_at ? "Member restored" : "Member archived"}
-          destructive={!person.archived_at}
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`${person.archived_at ? "Restore" : "Archive"} ${person.full_name}`}
-        >
-          {person.archived_at ? <ArchiveRestore /> : <Archive />}
-        </ConfirmButton>
-      ) : null}
-    </div>
+    <RowMenu
+      label={`Actions for ${person.full_name}`}
+      items={[
+        { label: "View profile", icon: "view", href: `/people/members/${person.id}` },
+        ...(canEdit && !person.archived_at ? [{ label: "Edit", icon: "edit" as const, href: `/people/members/${person.id}/edit` }] : []),
+        ...(canArchive
+          ? [
+              {
+                label: person.archived_at ? "Restore" : "Archive",
+                icon: person.archived_at ? ("restore" as const) : ("archive" as const),
+                separated: true,
+                confirm: {
+                  action: setPersonArchived.bind(null, person.id, !person.archived_at),
+                  title: person.archived_at ? "Restore this member?" : "Archive this member?",
+                  description: person.archived_at
+                    ? `${person.full_name} will appear in the members list again.`
+                    : `${person.full_name} will be hidden from lists and counts. Their history is kept and they can be restored at any time.`,
+                  confirmLabel: person.archived_at ? "Restore" : "Archive",
+                  successMessage: person.archived_at ? "Member restored" : "Member archived",
+                  destructive: !person.archived_at,
+                },
+              },
+            ]
+          : []),
+      ]}
+    />
   );
+  const since = (person: Person) => (person.membership_date ? `Member since ${person.membership_date.slice(0, 4)}` : null);
 
   return (
     <>
@@ -102,9 +92,9 @@ async function MembersContent({ searchParams }: Pick<PageProps<"/people/members"
         }
       />
 
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      <div className="mb-4 flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center">
         <SearchInput params={params} placeholder="Search name, ID, phone or email…" />
-        <FilterBar params={params}>
+        <FilterBar params={params} inline={3}>
           <FilterSelect
             params={params}
             paramKey="status"
@@ -155,77 +145,92 @@ async function MembersContent({ searchParams }: Pick<PageProps<"/people/members"
           {/* Phones and small tablets: one card per member. */}
           <ul data-reveal-list="" className="space-y-2 lg:hidden">
             {list.rows.map((person) => (
-              <li key={person.id} className="rounded-xl border bg-card p-3">
+              <li key={person.id} className="relative rounded-xl border bg-card p-3.5 shadow-xs">
                 <div className="flex items-start gap-3">
-                  <PersonAvatar name={person.full_name} src={person.photo_path ? photos[person.photo_path] : null} />
+                  <PersonAvatar name={person.full_name} src={person.photo_path ? photos[person.photo_path] : null} className="size-10" />
                   <div className="min-w-0 flex-1">
-                    <Link href={`/people/members/${person.id}`} className="block truncate font-medium hover:underline">
-                      {person.full_name}
-                    </Link>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {[person.member_code, person.cell_group_name, person.contact_number].filter(Boolean).join(" · ")}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <Link href={`/people/members/${person.id}`} className="min-w-0 truncate font-medium after:absolute after:inset-0 after:rounded-xl">
+                        {person.full_name}
+                      </Link>
                       <MemberStatus person={person} />
-                      {person.membership_status_name ? <StatusPill>{person.membership_status_name}</StatusPill> : null}
-                      {person.discipleship_stage_name ? <StatusPill tone="brand">{person.discipleship_stage_name}</StatusPill> : null}
                     </div>
+                    <p className="truncate text-xs text-muted-foreground">{[person.member_code, since(person)].filter(Boolean).join(" · ")}</p>
+                    <p className="mt-1.5 truncate text-sm">
+                      {[person.cell_group_name, person.ministry_names[0]].filter(Boolean).join(" · ") || <span className="text-muted-foreground">No group or ministry yet</span>}
+                    </p>
+                    {person.membership_status_name || person.discipleship_stage_name ? (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {person.membership_status_name ? <StatusPill>{person.membership_status_name}</StatusPill> : null}
+                        {person.discipleship_stage_name ? <StatusPill tone="brand">{person.discipleship_stage_name}</StatusPill> : null}
+                      </div>
+                    ) : null}
                   </div>
-                  {actions(person)}
+                  {/* Above the card-wide link. */}
+                  <div className="relative -mr-1 -mt-1">{actions(person)}</div>
                 </div>
               </li>
             ))}
           </ul>
 
-          <div className="hidden overflow-x-auto rounded-xl border bg-card lg:block">
+          <div className="hidden overflow-hidden rounded-xl border bg-card shadow-xs lg:block">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12" />
                   <TableHead>
-                    <SortLink params={params} column="member_code">Member ID</SortLink>
+                    <SortLink params={params} column="full_name">Member</SortLink>
                   </TableHead>
-                  <TableHead>
-                    <SortLink params={params} column="full_name">Full name</SortLink>
-                  </TableHead>
-                  <TableHead>Gender</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>
                     <SortLink params={params} column="cell_group_name">Cell group</SortLink>
                   </TableHead>
-                  <TableHead>Membership</TableHead>
-                  <TableHead>Stage</TableHead>
                   <TableHead>Ministry</TableHead>
+                  <TableHead>Membership</TableHead>
                   <TableHead>
-                    <SortLink params={params} column="membership_date">Date joined</SortLink>
+                    <SortLink params={params} column="membership_date">Joined</SortLink>
                   </TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-12 text-right">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {list.rows.map((person) => (
                   <TableRow key={person.id}>
                     <TableCell>
-                      <PersonAvatar name={person.full_name} src={person.photo_path ? photos[person.photo_path] : null} className="size-8" />
+                      <div className="flex items-center gap-3">
+                        <PersonAvatar name={person.full_name} src={person.photo_path ? photos[person.photo_path] : null} />
+                        <div className="min-w-0">
+                          <Link href={`/people/members/${person.id}`} className="block max-w-56 truncate font-medium hover:underline">
+                            {person.full_name}
+                          </Link>
+                          <p className="text-xs text-muted-foreground">
+                            <span className="font-mono">{person.member_code ?? "No ID"}</span>
+                            {since(person) ? ` · ${since(person)}` : null}
+                          </p>
+                        </div>
+                      </div>
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{person.member_code ?? "—"}</TableCell>
-                    <TableCell className="font-medium">
-                      <Link href={`/people/members/${person.id}`} className="hover:underline">
-                        {person.full_name}
-                      </Link>
+                    <TableCell>
+                      <span className="block">{person.contact_number ?? "—"}</span>
+                      {person.email ? <span className="block max-w-48 truncate text-xs text-muted-foreground">{person.email}</span> : null}
                     </TableCell>
-                    <TableCell>{person.gender ? titleCase(person.gender) : "—"}</TableCell>
-                    <TableCell>{person.contact_number ?? "—"}</TableCell>
                     <TableCell>{person.cell_group_name ?? "—"}</TableCell>
-                    <TableCell>{person.membership_status_name ?? "—"}</TableCell>
-                    <TableCell>{person.discipleship_stage_name ?? "—"}</TableCell>
-                    <TableCell>{person.ministry_names.join(", ") || "—"}</TableCell>
-                    <TableCell className="whitespace-nowrap">{formatDate(person.membership_date, settings.date_format)}</TableCell>
+                    <TableCell>
+                      <span className="block max-w-44 truncate" title={person.ministry_names.join(", ")}>
+                        {person.ministry_names.join(", ") || "—"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="block">{person.membership_status_name ?? "—"}</span>
+                      {person.discipleship_stage_name ? <span className="block text-xs text-muted-foreground">{person.discipleship_stage_name}</span> : null}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{formatDate(person.membership_date, settings.date_format)}</TableCell>
                     <TableCell>
                       <MemberStatus person={person} />
                     </TableCell>
-                    <TableCell>{actions(person)}</TableCell>
+                    <TableCell className="text-right">{actions(person)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

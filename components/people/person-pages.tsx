@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Archive, ArchiveRestore, ArrowLeft, Pencil, UserCheck } from "lucide-react";
+import { ArrowLeft, Cake, Heart, Mail, MapPin, Pencil, Phone, UserCheck, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import { convertVisitor, setPersonArchived } from "@/app/(app)/people/actions";
 import { buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,7 @@ import { PersonForm } from "@/components/people/person-form";
 import { VisitorStatusPill } from "@/components/people/visitor-status";
 import { ConfirmButton } from "@/components/shared/confirm-button";
 import { PersonAvatar, StatusPill } from "@/components/shared/person-avatar";
+import { RowMenu } from "@/components/shared/row-menu";
 import { EmptyState, NoAccess, PageHeader } from "@/components/shared/states";
 import { can, P } from "@/lib/auth/permissions";
 import { requireAccess } from "@/lib/auth/session";
@@ -87,13 +88,41 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+/** A personal detail with its icon: label above, value below. */
+function IconDetail({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3">
+      <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+      <div className="min-w-0">
+        <dt className="text-xs text-muted-foreground">{label}</dt>
+        <dd className="text-sm break-words">{children || "—"}</dd>
+      </div>
+    </div>
+  );
+}
+
+/** A label and value side by side, stacked on phones. */
+function InfoRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 gap-0.5 py-2 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
+      <dt className="text-xs text-muted-foreground sm:text-sm">{label}</dt>
+      <dd className="text-sm break-words">{children || "—"}</dd>
+    </div>
+  );
+}
+
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-xl border bg-card p-4 shadow-xs sm:p-6">
+    <section className="rounded-xl border bg-card p-4 shadow-xs sm:p-5">
       <h2 className="mb-4 text-base font-semibold">{title}</h2>
       {children}
     </section>
   );
+}
+
+/** "March 2020" from a date. */
+function monthYear(value: string | null) {
+  return value ? new Date(`${value}T00:00:00`).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null;
 }
 
 /** The profile screen for a member or visitor. */
@@ -149,22 +178,25 @@ export async function PersonProfilePage({
   }
 
   const personal = (
-    <Panel title="Personal information">
-      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Detail label="First name">{person.first_name}</Detail>
-        <Detail label="Middle name">{person.middle_name}</Detail>
-        <Detail label="Last name">{person.last_name}</Detail>
-        <Detail label="Nickname">{person.nickname}</Detail>
-        <Detail label="Gender">{person.gender ? titleCase(person.gender) : null}</Detail>
-        <Detail label="Birthdate">{person.birthdate ? `${date(person.birthdate)}${age !== null ? ` (${age})` : ""}` : null}</Detail>
-        <Detail label="Civil status">{person.civil_status ? titleCase(person.civil_status) : null}</Detail>
-        <Detail label="Contact number">{person.contact_number}</Detail>
-        <Detail label="Email">{person.email}</Detail>
-        <div className="sm:col-span-2 lg:col-span-3">
-          <Detail label="Address">{person.address}</Detail>
+    <section className="p-4 sm:p-5">
+      <h2 className="mb-4 text-base font-semibold">Personal information</h2>
+      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+        <IconDetail icon={UserRound} label="Full name">
+          {[person.first_name, person.middle_name, person.last_name].filter(Boolean).join(" ")}
+          {person.nickname ? <span className="text-muted-foreground"> ({person.nickname})</span> : null}
+        </IconDetail>
+        <IconDetail icon={Cake} label="Birthdate">
+          {person.birthdate ? `${date(person.birthdate)}${age !== null ? ` (${age} years old)` : ""}` : null}
+        </IconDetail>
+        <IconDetail icon={UsersRound} label="Gender">{person.gender ? titleCase(person.gender) : null}</IconDetail>
+        <IconDetail icon={Heart} label="Civil status">{person.civil_status ? titleCase(person.civil_status) : null}</IconDetail>
+        <IconDetail icon={Phone} label="Contact number">{person.contact_number}</IconDetail>
+        <IconDetail icon={Mail} label="Email">{person.email}</IconDetail>
+        <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+          <IconDetail icon={MapPin} label="Address">{person.address}</IconDetail>
         </div>
       </dl>
-    </Panel>
+    </section>
   );
 
   const visit = person.first_visit_date ? (
@@ -195,20 +227,36 @@ export async function PersonProfilePage({
   ) : null;
 
   const church = (
-    <Panel title="Church information">
-      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Detail label="Date first attended">{date(person.date_first_attended)}</Detail>
-        <Detail label="Membership date">{date(person.membership_date)}</Detail>
-        <Detail label="Membership status">{person.membership_status_name}</Detail>
-        <Detail label="Baptism status">{person.baptism_status_name}</Detail>
-        <Detail label="Baptism date">{date(person.baptism_date)}</Detail>
-        <Detail label="Cell group">{person.cell_group_name}</Detail>
-        <Detail label="Cell leader">{person.cell_leader_name}</Detail>
-        <Detail label="Ministry">{person.ministry_names.join(", ")}</Detail>
-        <Detail label="Mentor">{person.mentor_name}</Detail>
-        <Detail label="Discipleship stage">{person.discipleship_stage_name}</Detail>
+    <section className="p-4 sm:p-5">
+      <h2 className="mb-2 text-base font-semibold">Membership information</h2>
+      <dl className="divide-y">
+        <InfoRow label="Membership status">
+          {person.membership_status_name ? <StatusPill tone="success">{person.membership_status_name}</StatusPill> : null}
+        </InfoRow>
+        <InfoRow label="Membership date">{date(person.membership_date)}</InfoRow>
+        <InfoRow label="Date first attended">{date(person.date_first_attended)}</InfoRow>
+        <InfoRow label="Baptism">
+          {[person.baptism_status_name, person.baptism_date ? date(person.baptism_date) : null].filter(Boolean).join(" · ")}
+        </InfoRow>
+        <InfoRow label="Cell group">
+          {person.cell_group_name ? <StatusPill tone="info">{person.cell_group_name}</StatusPill> : null}
+        </InfoRow>
+        <InfoRow label="Group leader">{person.cell_leader_name}</InfoRow>
+        <InfoRow label="Mentor">{person.mentor_name}</InfoRow>
+        <InfoRow label="Discipleship stage">{person.discipleship_stage_name}</InfoRow>
+        <InfoRow label="Ministry involvement">
+          {person.ministry_names.length > 0 ? (
+            <span className="flex flex-wrap gap-1.5">
+              {person.ministry_names.map((name) => (
+                <StatusPill key={name} tone="brand">
+                  {name}
+                </StatusPill>
+              ))}
+            </span>
+          ) : null}
+        </InfoRow>
       </dl>
-    </Panel>
+    </section>
   );
 
   return (
@@ -217,95 +265,113 @@ export async function PersonProfilePage({
         <ArrowLeft className="size-4" aria-hidden /> Back to {isMember ? "members" : "visitors"}
       </Link>
 
-      <div className="mb-4 flex flex-col gap-4 rounded-xl border bg-card p-4 shadow-xs sm:flex-row sm:items-center sm:p-6">
-        <PersonAvatar
-          name={person.full_name}
-          src={person.photo_path ? photos[person.photo_path] : null}
-          className="size-20 text-xl"
-        />
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-semibold sm:text-2xl">{person.full_name}</h1>
-          <p className="text-sm text-muted-foreground">
-            {isMember
-              ? [person.member_code, person.cell_group_name].filter(Boolean).join(" · ") || "Member"
-              : `Visitor · first visit ${date(person.first_visit_date)}`}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {person.archived_at ? (
-              <StatusPill tone="danger">Archived</StatusPill>
-            ) : isMember ? (
-              person.is_active ? <StatusPill tone="success">Active</StatusPill> : <StatusPill>Inactive</StatusPill>
-            ) : (
-              <VisitorStatusPill status={person.visitor_status} />
-            )}
-            {isMember && person.membership_status_name ? <StatusPill>{person.membership_status_name}</StatusPill> : null}
-            {isMember && person.discipleship_stage_name ? (
-              <StatusPill tone="brand">{person.discipleship_stage_name}</StatusPill>
-            ) : null}
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {canConvert && !person.archived_at ? (
-            <ConfirmButton
-              action={convertVisitor.bind(null, person.id)}
-              title="Convert to member?"
-              description={`${person.full_name} will become a member. Their details, attendance and visit history stay on the same record.`}
-              confirmLabel="Convert to member"
-              successMessage={`${person.full_name} is now a member`}
-              redirectTo={`/people/members/${person.id}`}
-            >
-              <UserCheck /> Convert to member
-            </ConfirmButton>
-          ) : null}
-          {canEdit && !person.archived_at ? (
-            <Link href={`${LIST[mode]}/${person.id}/edit`} className={buttonVariants({ variant: "outline" })}>
-              <Pencil /> Edit
-            </Link>
-          ) : null}
-          {canArchive ? (
-            <ConfirmButton
-              action={setPersonArchived.bind(null, person.id, !person.archived_at, hasActiveAccount)}
-              title={
-                person.archived_at
-                  ? "Restore this record?"
-                  : hasActiveAccount
-                    ? "This member has an active system account."
-                    : "Archive this record?"
-              }
-              description={
-                person.archived_at
-                  ? `${person.full_name} will appear in lists again.${account ? " Their account stays disabled until you reactivate it." : ""}`
-                  : hasActiveAccount
-                    ? `Archiving ${person.full_name} also disables their account, so they can no longer sign in. Nothing is deleted: attendance, discipleship, ministry and other history are kept, and both can be restored later.`
-                    : `${person.full_name} will be hidden from lists and counts. Their history is kept and they can be restored at any time.`
-              }
-              confirmLabel={person.archived_at ? "Restore" : hasActiveAccount ? "Archive Member and Disable Account" : "Archive"}
-              successMessage={person.archived_at ? "Record restored" : "Record archived"}
-              destructive={!person.archived_at}
-              variant="outline"
-            >
-              {person.archived_at ? <ArchiveRestore /> : <Archive />}
-              {person.archived_at ? "Restore" : "Archive"}
-            </ConfirmButton>
-          ) : null}
-        </div>
-      </div>
-
       <Tabs defaultValue="overview">
-        <div className="overflow-x-auto pb-1">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            {canSeeAttendance ? <TabsTrigger value="attendance">Attendance</TabsTrigger> : null}
-            {isMember ? <TabsTrigger value="discipleship">Discipleship</TabsTrigger> : null}
-            {isMember ? <TabsTrigger value="ministries">Ministries</TabsTrigger> : null}
-            {canSeeCare ? <TabsTrigger value="care">Care</TabsTrigger> : null}
-            {canSeeLogs ? <TabsTrigger value="activity">Activity</TabsTrigger> : null}
-          </TabsList>
+        <div className="mb-4 rounded-xl border bg-card shadow-xs">
+          <div className="flex flex-wrap items-start gap-4 p-4 sm:flex-nowrap sm:items-center sm:p-5">
+            <PersonAvatar
+              name={person.full_name}
+              src={person.photo_path ? photos[person.photo_path] : null}
+              className="size-14 text-lg sm:size-20 sm:text-xl"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <h1 className="min-w-0 truncate">{person.full_name}</h1>
+                {person.archived_at ? (
+                  <StatusPill tone="danger">Archived</StatusPill>
+                ) : isMember ? (
+                  person.is_active ? <StatusPill tone="success">Active member</StatusPill> : <StatusPill>Inactive member</StatusPill>
+                ) : (
+                  <VisitorStatusPill status={person.visitor_status} />
+                )}
+              </div>
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+                {isMember ? (
+                  <>
+                    {person.membership_date ? <span>Member since {monthYear(person.membership_date)}</span> : <span>Member</span>}
+                    {person.member_code ? (
+                      <>
+                        <span aria-hidden className="text-border">|</span>
+                        <span>
+                          ID: <span className="font-mono">{person.member_code}</span>
+                        </span>
+                      </>
+                    ) : null}
+                  </>
+                ) : (
+                  <span>Visitor · first visit {date(person.first_visit_date)}</span>
+                )}
+              </p>
+              {isMember && person.discipleship_stage_name ? (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <StatusPill tone="brand">{person.discipleship_stage_name}</StatusPill>
+                </div>
+              ) : null}
+            </div>
+            <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:self-start">
+              {canConvert && !person.archived_at ? (
+                <ConfirmButton
+                  action={convertVisitor.bind(null, person.id)}
+                  title="Convert to member?"
+                  description={`${person.full_name} will become a member. Their details, attendance and visit history stay on the same record.`}
+                  confirmLabel="Convert to member"
+                  successMessage={`${person.full_name} is now a member`}
+                  redirectTo={`/people/members/${person.id}`}
+                >
+                  <UserCheck /> Convert to member
+                </ConfirmButton>
+              ) : null}
+              {canEdit && !person.archived_at ? (
+                <Link href={`${LIST[mode]}/${person.id}/edit`} className={buttonVariants({ variant: "outline" })}>
+                  <Pencil /> Edit
+                </Link>
+              ) : null}
+              {canArchive ? (
+                <RowMenu
+                  label={`More actions for ${person.full_name}`}
+                  text="More"
+                  items={[
+                    {
+                      label: person.archived_at ? "Restore" : "Archive",
+                      icon: person.archived_at ? "restore" : "archive",
+                      confirm: {
+                        action: setPersonArchived.bind(null, person.id, !person.archived_at, hasActiveAccount),
+                        title: person.archived_at
+                          ? "Restore this record?"
+                          : hasActiveAccount
+                            ? "This member has an active system account."
+                            : "Archive this record?",
+                        description: person.archived_at
+                          ? `${person.full_name} will appear in lists again.${account ? " Their account stays disabled until you reactivate it." : ""}`
+                          : hasActiveAccount
+                            ? `Archiving ${person.full_name} also disables their account, so they can no longer sign in. Nothing is deleted: attendance, discipleship, ministry and other history are kept, and both can be restored later.`
+                            : `${person.full_name} will be hidden from lists and counts. Their history is kept and they can be restored at any time.`,
+                        confirmLabel: person.archived_at ? "Restore" : hasActiveAccount ? "Archive Member and Disable Account" : "Archive",
+                        successMessage: person.archived_at ? "Record restored" : "Record archived",
+                        destructive: !person.archived_at,
+                      },
+                    },
+                  ]}
+                />
+              ) : null}
+            </div>
+          </div>
+          <div className="px-4 sm:px-5">
+            <TabsList className="border-b-0">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              {canSeeAttendance ? <TabsTrigger value="attendance">Attendance</TabsTrigger> : null}
+              {isMember ? <TabsTrigger value="discipleship">Discipleship</TabsTrigger> : null}
+              {isMember ? <TabsTrigger value="ministries">Ministries</TabsTrigger> : null}
+              {canSeeCare ? <TabsTrigger value="care">Pastoral Care</TabsTrigger> : null}
+              {canSeeLogs ? <TabsTrigger value="activity">Activity</TabsTrigger> : null}
+            </TabsList>
+          </div>
         </div>
 
         <TabsContent value="overview" className="space-y-4">
-          {personal}
-          {isMember ? church : null}
+          <div className={`grid grid-cols-1 divide-y rounded-xl border bg-card shadow-xs ${isMember ? "lg:grid-cols-2 lg:divide-x lg:divide-y-0" : ""}`}>
+            {personal}
+            {isMember ? church : null}
+          </div>
           {managesUsers ? (
             <AccountAccess
               person={person}

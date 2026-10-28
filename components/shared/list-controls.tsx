@@ -55,9 +55,9 @@ export function SearchInput({
   return (
     <div className="relative w-full sm:max-w-xs">
       {pending ? (
-        <Loader2 className="absolute left-2.5 top-2 size-4 animate-spin text-muted-foreground" aria-hidden />
+        <Loader2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" aria-hidden />
       ) : (
-        <Search className="absolute left-2.5 top-2 size-4 text-muted-foreground" aria-hidden />
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
       )}
       <Input
         type="search"
@@ -65,7 +65,7 @@ export function SearchInput({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="pl-8"
+        className="pl-9 max-md:pl-10"
       />
     </div>
   );

@@ -130,14 +130,14 @@ export function AttendanceRecorder({
 
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-2.5 top-2 size-4 text-muted-foreground" aria-hidden />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Find a person…"
             aria-label="Find a person"
-            className="pl-8"
+            className="pl-9 max-md:pl-10"
           />
         </div>
         <div className="flex gap-1 overflow-x-auto" role="tablist" aria-label="Filter people">
