@@ -23,7 +23,7 @@ const never = () => () => {};
  * settings, and not when the device asks for reduced motion. The drawing-in
  * happens when a chart appears or its data changes, never on hover.
  */
-function useChartMotion() {
+export function useChartMotion() {
   const allowed = useSyncExternalStore(
     never,
     () => document.documentElement.dataset.motion !== "off" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -34,8 +34,8 @@ function useChartMotion() {
 
 // Every dashboard chart shows one measure, so each uses a single series in
 // the brand colour and is named by its card title rather than a legend.
-const AXIS_FONT_SIZE = 12;
-const axis = { fontSize: AXIS_FONT_SIZE, fill: "var(--muted-foreground)" };
+export const AXIS_FONT_SIZE = 12;
+export const axis = { fontSize: AXIS_FONT_SIZE, fill: "var(--muted-foreground)" };
 
 // Peso axes show whole amounts (₱1,500) and switch to a compact form (₱25K)
 // from ten thousand up; the tooltip always shows the exact amount.

@@ -23,6 +23,7 @@ A church management web app for JAMC-Davao: members, visitors, attendance, cell 
 | `npm run db:migrate` | Applies new files in `supabase/migrations` to the real database (`SUPABASE_DB_URL`). Tracks them in `app_private.migrations`. |
 | `npm run create-admin -- <email> "<password>" "<name>"` | Creates or promotes a Super Admin |
 | `npm run demo:seed` / `npm run demo:remove` | Adds or removes clearly marked demo data (`--dry-run` supported) |
+| `npm run first-visit:backfill` | Lists visitors whose first visit is not yet an attendance mark; `-- --apply` adds them (one-off after migration 0030) |
 | `npm run docs:screenshots -- --base <url> --temp-admin` | Re-takes the screenshots in `docs/screenshots/` from a running build (temporary Super Admin, deleted afterwards; emails and mobile numbers masked) |
 | `npm run docs:pdf` | Builds `docs/JAMC-Davao-Connect-User-Manual.pdf` from the Markdown manual |
 

@@ -233,6 +233,23 @@ const BODIES = {
       </div>
     </div>
   ),
+  // Key figures, a wide chart beside a narrow one, two more charts, then the list.
+  analytics: () => (
+    <div className="space-y-4">
+      <StatsCardSkeleton count={4} />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ChartSkeleton />
+        </div>
+        <ChartSkeleton />
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ChartSkeleton />
+        <ChartSkeleton />
+      </div>
+      <TableSkeleton />
+    </div>
+  ),
   finance: () => (
     <div className="space-y-4">
       <StatsCardSkeleton count={5} />

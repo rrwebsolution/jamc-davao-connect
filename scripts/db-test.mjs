@@ -1061,6 +1061,40 @@ await as(admin, async () => {
 const [{ b: backgroundSaved }] = await rows(`select public.get_public_branding() as b`);
 check("background: it is separate from the login background", backgroundSaved.system_background_path === "system-background-test.webp" && backgroundSaved.login_background_path === null);
 
+// --- attendance records summary --------------------------------------------------------
+
+// The figures must match the list they sit above: same view, same filters, same access.
+const summary = async (args = []) =>
+  (await rows(`select public.attendance_records_summary(${args.map((_, i) => `$${i + 1}`).join(", ")}) as s`, args))[0].s;
+const viewCount = async (where = "true", params = []) => count(`select 1 from public.attendance_record_details where ${where}`, params);
+
+await as(pastor, async () => {
+  const s = await summary();
+  check("summary: marks match the records a pastor sees", s.marks === (await viewCount()) && s.marks > 0, `${s.marks}`);
+  check("summary: present and absent add up", s.present === (await viewCount("counts_as_present")) && s.present + s.absent === s.marks);
+  check("summary: the trend adds up to the present count", s.trend.reduce((sum, p) => sum + p.members + p.visitors, 0) === s.present);
+  check("summary: statuses add up to all marks", s.statuses.reduce((sum, p) => sum + p.total, 0) === s.marks);
+  const byGroup = await summary([null, null, null, null, group]);
+  check("summary: the group filter uses the person's current group", byGroup.marks === (await viewCount("person_cell_group_id = $1", [group])) && byGroup.marks > 0);
+  check("summary: the group chart counts only people in a group", s.groups.every((g) => g.id) && s.groups.find((g) => g.id === group)?.total === byGroup.marks);
+  const onlyAbsent = await summary([null, null, null, absent]);
+  check("summary: the status filter applies", onlyAbsent.marks === (await viewCount("status_id = $1", [absent])) && onlyAbsent.present === 0);
+  const onePerson = await summary([null, null, null, null, null, null, null, null, inGroup]);
+  check("summary: the person filter applies", onePerson.marks === (await viewCount("person_id = $1", [inGroup])) && onePerson.marks > 0);
+  const future = await summary([new Date(Date.now() + 864e5 * 400).toISOString().slice(0, 10)]);
+  check("summary: an empty period has no points", future.marks === 0 && future.trend.length === 0 && future.monthly.length === 0);
+});
+await as(leader, async () => {
+  const s = await summary();
+  check("summary: a cell leader's figures cover only their people", s.marks === (await viewCount()));
+});
+await as(nobody, async () => {
+  check("summary: no role counts nothing", (await summary()).marks === 0);
+});
+await as(null, async () => {
+  check("summary: anon cannot call it", await denied(`select public.attendance_records_summary()`));
+});
+
 // --- system labels ----------------------------------------------------------------------
 
 const [{ b: labelDefaults }] = await rows(`select public.get_public_branding() as b`);
@@ -1183,6 +1217,67 @@ check(
   "demo: removal leaves one summary log entry",
   (await count(`select 1 from public.activity_logs where description like 'Demo data removed:%'`)) === 1,
 );
+
+// --- a visitor's first visit counts as attendance (0030) ----------------------------------
+
+const visitorProfile = (personId, date, type) =>
+  db.query(`insert into public.visitor_profiles (person_id, first_visit_date, attendance_type_id) values ($1, ${date}, $2)`, [personId, type]);
+const marksOf = (personId) =>
+  rows(`select r.session_id, st.name as status, r.notes from public.attendance_records r join public.attendance_statuses st on st.id = r.status_id where r.person_id = $1`, [personId]);
+
+const fvNew = await makePerson("Fiona", "Firstvisit", { person_type: "visitor" });
+await visitorProfile(fvNew, "current_date - 7", sundayType);
+const [fvMark] = await marksOf(fvNew);
+check("first visit: registering marks the visitor present in that day's service", fvMark?.session_id === sunday && fvMark?.status === "Present" && fvMark?.notes === "First visit");
+
+const fvMarked = await makePerson("Mark", "Already", { person_type: "visitor" });
+await db.query(`insert into public.attendance_records (session_id, person_id, status_id) values ($1, $2, $3)`, [sunday, fvMarked, absent]);
+await visitorProfile(fvMarked, "current_date - 7", sundayType);
+const fvMarkedMarks = await marksOf(fvMarked);
+check("first visit: a mark already given is kept", fvMarkedMarks.length === 1 && fvMarkedMarks[0].status === "Absent");
+
+const fvNoType = await makePerson("Noah", "Notype", { person_type: "visitor" });
+await visitorProfile(fvNoType, "current_date - 7", null);
+check("first visit: without a service nothing is guessed", (await marksOf(fvNoType)).length === 0);
+
+const fvLater = await makePerson("Lara", "Later", { person_type: "visitor" });
+await visitorProfile(fvLater, "current_date - 40", sundayType);
+check("first visit: no session that day, no mark yet", (await marksOf(fvLater)).length === 0);
+const [{ id: fvSession }] = await rows(
+  `insert into public.attendance_sessions (attendance_type_id, title, session_date) values ($1, 'Sunday Service', current_date - 40) returning id`,
+  [sundayType],
+);
+const [fvLaterMark] = await marksOf(fvLater);
+check("first visit: creating the session marks the visitor", fvLaterMark?.session_id === fvSession && fvLaterMark?.status === "Present");
+
+const fvArchived = await makePerson("Archie", "Gone", { person_type: "visitor", archived_at: new Date().toISOString() });
+await visitorProfile(fvArchived, "current_date - 7", sundayType);
+check("first visit: archived visitors are not marked", (await marksOf(fvArchived)).length === 0);
+
+await db.query(`delete from public.attendance_records where person_id = $1`, [fvNew]);
+check("first visit: the backfill dry run counts what is missing", (await rows(`select public.backfill_first_visit_marks(true) as n`))[0].n === 1);
+check("first visit: the backfill adds it", (await rows(`select public.backfill_first_visit_marks(false) as n`))[0].n === 1 && (await marksOf(fvNew)).length === 1);
+check("first visit: running the backfill again adds nothing", (await rows(`select public.backfill_first_visit_marks(false) as n`))[0].n === 0);
+await as(admin, async () => {
+  check("first visit: the backfill cannot be called through the API", await denied(`select public.backfill_first_visit_marks(false)`));
+  check("first visit: nor can the marking helper", await denied(`select public.mark_first_visit($1)`, [fvNew]));
+});
+
+// The Attendance Records summary lists first-time visitors (0029) and now sees their mark.
+await as(pastor, async () => {
+  const weekAgo = new Date(Date.now() - 864e5 * 7).toISOString().slice(0, 10);
+  const registered = await count(`select 1 from public.visitor_profiles where first_visit_date = $1`, [weekAgo]);
+  const s = await summary([weekAgo, weekAgo]);
+  check("first-time visitors: counted like the dashboard, from the profiles", s.new_visitors === registered && registered > 0, `${s.new_visitors}/${registered}`);
+  const listed = s.first_visitors.find((v) => v.id === fvNew);
+  check("first-time visitors: listed with their service and marked present", listed?.full_name === "Fiona Firstvisit" && listed?.service_name === "Sunday Service" && listed?.marked_present === true);
+  check("first-time visitors: their first visit is in the attendance figures", s.visitors_present >= 1);
+  check("first-time visitors: a members-only view has none", (await summary([weekAgo, weekAgo, null, null, null, null, "member"])).new_visitors === 0);
+  check("first-time visitors: the session filter matches the visit day and service", (await summary([null, null, null, null, null, fvSession])).first_visitors.some((v) => v.id === fvLater));
+});
+await as(leader, async () => {
+  check("first-time visitors: a cell leader, who cannot see visitors, counts none", (await summary()).new_visitors === 0);
+});
 
 // --- result -----------------------------------------------------------------
 

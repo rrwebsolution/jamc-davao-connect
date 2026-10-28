@@ -15,6 +15,7 @@
 //   --only <folder>      only one folder, e.g. --only finance
 //   --files <a,b>        only these pictures, e.g. --files finance/giving,mobile/more-menu
 //   --any-records        open real records when there is no demo data (only with --out)
+//   --desktop-width <px>, --phone-width <px>   other screen widths (for a visual check)
 //   --out <folder>       save somewhere else than docs/screenshots (e.g. for a visual check)
 //   --debug-path <path> --debug-expr <js>   print what one signed-in page looks like
 //
@@ -48,8 +49,8 @@ const BASE = option("--base", "http://localhost:3100").replace(/\/$/, "");
 const ONLY = option("--only", null);
 const FILES = option("--files", null)?.split(",").map((name) => name.trim().replace(/\.png$/, ""));
 const OUT = option("--out", "docs/screenshots");
-const DESKTOP = { width: 1440, height: 900, mobile: false, deviceScaleFactor: 1 };
-const PHONE = { width: 390, height: 844, mobile: true, deviceScaleFactor: 2 };
+const DESKTOP = { width: Number(option("--desktop-width", 1440)), height: 900, mobile: false, deviceScaleFactor: 1 };
+const PHONE = { width: Number(option("--phone-width", 390)), height: 844, mobile: true, deviceScaleFactor: 2 };
 const EDGE =
   process.env.EDGE_PATH ??
   ["C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe", "C:/Program Files/Microsoft/Edge/Application/msedge.exe"].find(existsSync);
@@ -296,7 +297,8 @@ function shots(ids) {
     { file: "attendance/services", path: "/attendance/services" },
     { file: "attendance/new-session", path: "/attendance/services?new=1", wait: 600 },
     ids.session && { file: "attendance/record-attendance", path: `/attendance/services/${ids.session}`, full: true },
-    { file: "attendance/records", path: "/attendance/records" },
+    { file: "attendance/records", path: "/attendance/records", full: true },
+    { file: "mobile/attendance-records", path: "/attendance/records", phone: true, full: true },
     { file: "attendance/history", path: "/attendance/history" },
 
     // Groups, care, growth

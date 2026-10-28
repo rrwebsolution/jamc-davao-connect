@@ -21,6 +21,20 @@ import { brandVariables, COLOR_FIELDS, contrastRatio, DEFAULT_LOGIN_CONTENT, HEX
 import { DEFAULT_TYPOGRAPHY } from "@/lib/typography";
 import { appearanceSchema } from "@/lib/validation";
 
+/** What the root layout uses when no favicon is uploaded. */
+const FALLBACK_FAVICON = "/pwa-icon/192";
+
+/**
+ * Shows a new favicon in this tab at once. A refresh re-renders the page but
+ * browsers keep the tab icon until the <link> itself changes, so its address
+ * is updated here (the next full load gets it from the layout as usual).
+ */
+function showFavicon(url: string) {
+  for (const link of document.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]')) {
+    link.href = url;
+  }
+}
+
 const ASSETS = [
   { key: "logo_path", label: "Church logo", hint: "Shown in the sidebar and on the left side of the login page. Both are dark, so a light logo works best." },
   {
@@ -291,6 +305,9 @@ export function AppearanceForm({
       if (!result.ok) {
         toast.error(result.error);
         return;
+      }
+      if (next.favicon_path !== saved.favicon_path) {
+        showFavicon(next.favicon_path ? `${assetBaseUrl}/${next.favicon_path}` : FALLBACK_FAVICON);
       }
       setValues(next);
       setSaved(next);

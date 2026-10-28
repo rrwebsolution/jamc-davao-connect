@@ -12,6 +12,7 @@
     "db:migrate": "node scripts/migrate.mjs",
     "demo:seed": "node scripts/demo-seed.mjs",
     "demo:remove": "node scripts/demo-remove.mjs",
+    "first-visit:backfill": "node scripts/first-visit-backfill.mjs",
     "create-admin": "node scripts/create-admin.mjs",
     "docs:screenshots": "node scripts/docs-screenshots.mjs",
     "docs:pdf": "node scripts/docs-pdf.mjs"
